@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Slicing, filtering and interactions · PrismBI docs</title><link rel="stylesheet" href="docs.css"></head>
+<body><nav aria-label="Guides"><a class="brand" href="index.html">PrismBI docs</a>
+<input id="q" type="search" placeholder="Search the guides" aria-label="Search the guides">
+<ul id="results" class="results" hidden></ul>
+<ul id="nav-list"><li><a href="getting-started.html">Getting started</a></li><li><a href="data-model.html">Data modeling</a></li><li><a href="expressions.html">Expressions (DAX subset)</a></li><li><a href="advanced-modeling.html">Advanced modeling</a></li><li><a href="tooling.html">DAX tooling</a></li><li><a href="visuals.html">Visuals reference</a></li><li><a href="interactions.html" aria-current="page">Slicing, filtering and interactions</a></li><li><a href="theming.html">Theming and formatting</a></li><li><a href="studio.html">Studio (report editor)</a></li><li><a href="react.html">React</a></li><li><a href="frameworks.html">Web components, Vue, Svelte and Angular</a></li><li><a href="custom-visuals.html">Custom visuals</a></li><li><a href="ai.html">AI: questions, explanations, insights and agents</a></li><li><a href="transforms.html">Transforms: clean and reshape data (Power Query-style)</a></li><li><a href="connectors.html">Connectors and live data</a></li><li><a href="sql.html">SQL pushdown: DuckDB, Postgres and SQLite</a></li><li><a href="performance.html">Performance and scale</a></li><li><a href="files.html">Report files and version control</a></li><li><a href="server.html">Server: headless rendering, alerts and schedules</a></li><li><a href="collab.html">Collaboration: co-editing, presence and comments</a></li><li><a href="plugins.html">Plugins: signed visuals, themes and connectors</a></li><li><a href="powerbi.html">Importing Power BI projects</a></li><li><a href="../playground.html">▶ Playground</a></li><li><a href="../index.html">Live demo</a></li><li><a href="https://github.com/prismbi-js/prismbi">GitHub</a></li><li><a href="https://www.npmjs.com/package/@prismbi/prismbi">npm</a></li></ul></nav>
+<main><h1 id="slicing-filtering-and-interactions">Slicing, filtering and interactions</h1>
+<p>PrismBI gives you every Power BI way of narrowing data down, and each one is scriptable.</p>
+<p><img src="images/report-cross-filter.png" alt="Clicking a bar cross-filters every other visual on the page" loading="lazy"></p>
+<div class="table"><table><thead><tr><th>Mechanism</th><th>Scope</th><th>Set by</th></tr></thead><tbody><tr><td>Report filters</td><td>all pages</td><td>filter pane, <code>report.setReportFilters()</code>, <code>definition.filters</code></td></tr><tr><td>Page filters</td><td>one page</td><td>filter pane, <code>report.setPageFilters()</code>, <code>page.filters</code></td></tr><tr><td>Visual filters</td><td>one visual</td><td>filter pane (click the visual first), <code>report.setVisualFilters()</code>, <code>visual.filters</code></td></tr><tr><td>Slicers</td><td>other visuals on the page</td><td>user, <code>report.setSlicerSelection()</code></td></tr><tr><td>Cross-filter / cross-highlight</td><td>other visuals on the page</td><td>clicking data points, legend entries or table rows</td></tr><tr><td>Drill</td><td>one visual</td><td>double-click a data point, or the header ↑ / ⇊ / ⤓</td></tr><tr><td>Include / Exclude</td><td>one visual (becomes a visual filter)</td><td>right-click a data point</td></tr><tr><td>Drill-through</td><td>a target page</td><td>right-click a data point, <code>report.drillThrough()</code></td></tr><tr><td>Decomposition tree</td><td>other visuals on the page</td><td>clicking nodes in the tree</td></tr></tbody></table></div>
+<p>All of them compose with AND.</p>
+<h2 id="slicers">Slicers <a class="anchor" href="#slicers" aria-label="Link to this section">#</a></h2>
+<div class="code"><pre><code class="lang-ts">{ id: 'region', type: 'slicer', title: 'Region', fields: { field: 'Region[Name]' },
+  format: { slicer: { style: 'tiles', single: false } } }</code></pre></div>
+<div class="table"><table><thead><tr><th>Style</th><th>Best for</th><th>Behaviour</th></tr></thead><tbody><tr><td><code>list</code></td><td>text, few to hundreds of values</td><td>checkboxes, Select all, search once there are more than 7 values</td></tr><tr><td><code>dropdown</code></td><td>saving space</td><td>the same list in a popover</td></tr><tr><td><code>tiles</code></td><td>a handful of values</td><td>buttons. Click selects one value, Ctrl/⌘+click adds more (<code>single: false</code> makes every click add)</td></tr><tr><td><code>between</code></td><td>numbers and dates (default for dates)</td><td>from/to inputs plus a dual-thumb slider</td></tr><tr><td><code>relative</code></td><td>dates</td><td>Last, Next or This N days, weeks, months or years</td></tr><tr><td>tree</td><td>hierarchies (several fields)</td><td>tri-state checkboxes, expand/collapse, search. Emits an exact path filter, so &quot;Road Bikes&quot; under Bikes doesn't also match another category's &quot;Road Bikes&quot;</td></tr></tbody></table></div>
+<p>A slicer filters every other visual on its page, but not itself. Its own list of values is narrowed by the other filters and slicers, so you get cascading slicers for free.</p>
+<div class="code"><pre><code class="lang-ts">report.setSlicerSelection('region', [{ target: 'Region[Name]', op: 'in', values: ['North'] }]);
+report.setSlicerSelection('region', null); // clear</code></pre></div>
+<h3 id="hierarchy-slicer">Hierarchy slicer <a class="anchor" href="#hierarchy-slicer" aria-label="Link to this section">#</a></h3>
+<div class="code"><pre><code class="lang-ts">{ type: 'slicer', fields: { field: ['Product[Category]', 'Product[Subcategory]', 'Product[Name]'] } }</code></pre></div>
+<h3 id="sync-slicers-across-pages">Sync slicers across pages <a class="anchor" href="#sync-slicers-across-pages" aria-label="Link to this section">#</a></h3>
+<p>Slicers with the same <code>syncGroup</code> share one selection on every page, whatever their style:</p>
+<div class="code"><pre><code class="lang-ts">{ type: 'slicer', fields: { field: 'Date[Year]' }, format: { slicer: { style: 'tiles', syncGroup: 'year' } } }   // page 1
+{ type: 'slicer', fields: { field: 'Date[Year]' }, format: { slicer: { style: 'dropdown', syncGroup: 'year' } } } // page 2</code></pre></div>
+<h2 id="cross-filtering-and-cross-highlighting">Cross-filtering and cross-highlighting <a class="anchor" href="#cross-filtering-and-cross-highlighting" aria-label="Link to this section">#</a></h2>
+<p>Clicking a data point selects it. <strong>Ctrl</strong> or <strong>⌘</strong> + click adds to the selection, clicking the same point again clears it, and clicking empty space or pressing <strong>Esc</strong> clears everything. Every other visual on the page reacts:</p>
+<ul><li>
+<strong>highlight</strong> is the default for column, bar, line, area, pie, donut, treemap, funnel and scatter. They keep their full values faded and draw the selected portion solid.
+</li><li>
+<strong>filter</strong> is the default for everything else. They re-query with the selection as a filter.
+</li><li>
+<strong>none</strong> means the visual ignores selections.
+</li></ul>
+<div class="code"><pre><code class="lang-ts">{ type: 'line', interaction: 'filter', ... }                       // how this visual reacts
+{ type: 'card', interactionsFrom: { 'by-category': 'none' }, ... } // per source visual</code></pre></div>
+<p>The source visual dims unselected marks. Clicking a legend entry selects the whole series. A table or matrix row selects its group values.</p>
+<h2 id="drill-down">Drill down <a class="anchor" href="#drill-down" aria-label="Link to this section">#</a></h2>
+<p>Put several fields in a drillable role to create a hierarchy:</p>
+<div class="code"><pre><code class="lang-ts">fields: { category: ['Date[Year]', 'Date[Quarter]', 'Date[Month]'], values: 'Total Sales' }</code></pre></div>
+<ul><li>
+Double-clicking a data point drills into that member. For example, 2025 shows that year's quarters.
+</li><li>
+<strong>↑</strong> drills up a level.
+</li><li>
+<strong>⇊ Go to next level</strong> shows all members of the next level, without a parent filter.
+</li><li>
+A breadcrumb under the title shows the path, e.g. <code>Year: 2025 › Quarter: Q2</code>.
+</li></ul>
+<div class="code"><pre><code class="lang-ts">report.visual('trend').drillDown(2025);
+report.visual('trend').drillUp();
+report.on('drill', (e) =&gt; console.log(e.level, e.path));</code></pre></div>
+<p><strong>Expand all down one level</strong> (header ⤓, or <code>report.visual(id).expandAll()</code>) shows two levels together, e.g. &quot;Bikes · Road Bikes&quot;. Drill up collapses it again.</p>
+<h2 id="right-click-include-exclude-drill-through">Right-click: Include, Exclude, Drill through <a class="anchor" href="#right-click-include-exclude-drill-through" aria-label="Link to this section">#</a></h2>
+<p>Right-clicking any data point, table row or matrix row opens a menu:</p>
+<p><img src="images/report-context-menu.png" alt="The data point context menu: Include, Exclude, Drill through and Explain this" loading="lazy"></p>
+<ul><li>
+<strong>Include</strong> keeps only that data point in this visual. <strong>Exclude</strong> removes it. Both are added as visual-level filters, so they show in the filter pane and can be cleared there or with <strong>Clear visual filters</strong>.
+</li><li>
+<strong>Drill through: &lt;page&gt;</strong> appears for every page whose <code>drillthrough.fields</code> match the data point.
+</li><li>
+<strong>Clear selection</strong> appears when something is selected.
+</li></ul>
+<h2 id="drill-through-pages">Drill-through pages <a class="anchor" href="#drill-through-pages" aria-label="Link to this section">#</a></h2>
+<div class="code"><pre><code class="lang-ts">{
+  id: 'product-detail',
+  name: 'Product details',
+  hidden: true,                                    // reachable only via drill-through
+  drillthrough: { fields: ['Product[Category]', 'Product[Name]'], keepAllFilters: true },
+  visuals: [ /* cards, trends, tables about one product */ ],
+}</code></pre></div>
+<p>Drilling through filters the target page to the data point's values for those fields. When <code>keepAllFilters</code> is on (the default), the target also gets the source visual's filters: slicers, page and visual filters, and the selection. A <strong>← Back</strong> button appears in the toolbar, and the filter pane gets a &quot;Drill through&quot; section you can edit.</p>
+<div class="code"><pre><code class="lang-ts">report.drillThrough('product-detail', [{ target: 'Product[Name]', op: 'eq', value: 'Road-150' }]);
+report.back();
+report.on('drillThrough', (e) =&gt; console.log(e.fromPageId, '→', e.toPageId, e.filters));</code></pre></div>
+<h2 id="decomposition-tree">Decomposition tree <a class="anchor" href="#decomposition-tree" aria-label="Link to this section">#</a></h2>
+<p><img src="images/decomposition-tree.png" alt="The decomposition tree splitting Total Sales by category and region" loading="lazy"></p>
+<div class="code"><pre><code class="lang-ts">{ type: 'decompositionTree', fields: { values: 'Total Sales', explainBy: ['Product[Category]', 'Region[Group]', 'Sales[Channel]'] } }</code></pre></div>
+<p>Pick a field to split the total by, click a node, and split that node by another field. Each step narrows the analysis, and the selected path cross-filters the rest of the page. <strong>High value (auto)</strong> and <strong>Low value (auto)</strong> pick the field whose biggest (or smallest) member stands out most.</p>
+<h2 id="report-tooltips">Report tooltips <a class="anchor" href="#report-tooltips" aria-label="Link to this section">#</a></h2>
+<p>Design a small page and mark it as a tooltip page. Any visual can then show it on hover, filtered to the hovered data point plus that visual's filters:</p>
+<div class="code"><pre><code class="lang-ts">{ id: 'tip-cat', name: 'Category tooltip', tooltip: { width: 320, height: 210 }, layout: { columns: 2, rowHeight: 30 },
+  visuals: [ { type: 'card', fields: { value: 'Total Sales' }, layout: { x: 0, y: 0, w: 1, h: 2 } }, /* … */ ] }
+
+{ type: 'clusteredColumn', fields: { … }, format: { tooltip: { page: 'tip-cat' } } }</code></pre></div>
+<p>Tooltip pages never appear as tabs.</p>
+<h2 id="edit-interactions">Edit interactions <a class="anchor" href="#edit-interactions" aria-label="Link to this section">#</a></h2>
+<p>The <strong>Edit interactions</strong> toolbar button works like Power BI's. Click a visual, and every other visual shows <strong>Filter / Highlight / None</strong>, which sets how it reacts to selections in the visual you clicked. From code:</p>
+<div class="code"><pre><code class="lang-ts">report.toggleEditInteractions(true);
+report.setInteraction('by-category', 'kpi-card', 'none');   // stored as spec.interactionsFrom</code></pre></div>
+<h2 id="the-filter-pane">The filter pane <a class="anchor" href="#the-filter-pane" aria-label="Link to this section">#</a></h2>
+<p>Turn it on with <code>chrome: { filterPane: true }</code> (a toolbar toggle) or <code>'open'</code>. It lists filter cards for <strong>this visual</strong> (the last one clicked), <strong>this page</strong> and <strong>all pages</strong>. Each card has three modes:</p>
+<p><img src="images/report-filter-pane.png" alt="The filter pane with report, page and visual filters" loading="lazy"></p>
+<ul><li>
+<strong>Basic:</strong> tick values from the column's full domain, with search.
+</li><li>
+<strong>Advanced:</strong> contains, does not contain, starts with, ends with, is, is not, &gt;, ≥, &lt;, ≤, is blank, is not blank.
+</li><li>
+<strong>Top N:</strong> top or bottom N items, ranked by any measure.
+</li></ul>
+<p>Use <strong>+ Add data field</strong> to add a card for any visible column. An empty card means &quot;is (All)&quot; and filters nothing.</p>
+<h2 id="filter-reference">Filter reference <a class="anchor" href="#filter-reference" aria-label="Link to this section">#</a></h2>
+<div class="code"><pre><code class="lang-ts">type FilterSpec =
+  | { target: 'Table[Col]', op: 'in' | 'notIn', values: CellValue[] }
+  | { target, op: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte', value }
+  | { target, op: 'between', min?, max? }                       // inclusive, open-ended allowed
+  | { target, op: 'contains' | 'notContains' | 'startsWith' | 'endsWith', value } // case-insensitive
+  | { target, op: 'isBlank' | 'isNotBlank' }
+  | { targets: ['T[a]', 'T[b]'], op: 'tuples', tuples: [[a1, b1], [a2, b2]], exclude?: true }  // multi-column selections
+  | { target, op: 'topN', n: 5, by: 'Total Sales', direction?: 'top' | 'bottom' };</code></pre></div>
+<p>Filters on a dimension column flow to related fact tables. Filters on a fact column don't flow back to dimensions (single-direction relationships).</p>
+<h2 id="export">Export <a class="anchor" href="#export" aria-label="Link to this section">#</a></h2>
+<ul><li>
+Per visual: header <strong>⇩</strong> → CSV, Excel, PNG or SVG. In code: <code>report.visual(id).exportCsv() / exportXlsx() / exportImage('png') / toSvg()</code>.
+</li><li>
+Per page: toolbar <strong>Export PDF</strong>, or <code>await report.exportPdf({ pages: 'current' | 'all' })</code>. Each report page becomes one PDF page. The PDF writer has no dependencies and only loads when used.
+</li><li>
+Data to Excel: toolbar <strong>Export Excel</strong>, or <code>await report.exportXlsx({ pages: 'current' | 'all' })</code>. Every visual with data becomes one sheet, in reading order (top to bottom, then left to right), named after its title, with <code>Page - Title</code> names when exporting all pages. Cells keep their types: numbers, dates and booleans, not text. Measure and column format strings become Excel number formats, and the header row is bold, frozen and filterable. <code>toXlsx()</code> returns the bytes instead of downloading, on the report and on each visual.
+</li><li>
+Your own workbooks: <code>buildXlsx(sheets)</code> writes any <code>{ name, columns: [{ header, format, width }], rows }</code> sheets, and <code>resultToSheet(model.query(spec), name)</code> turns a query result into one. Like the PDF writer it has no dependencies; files are stored uncompressed.
+</li></ul>
+<div class="code"><a class="run" href="../playground.html#interactions%2F0">▶ Run in playground</a><pre><code class="lang-js">import { buildXlsx, resultToSheet } from '@prismbi/prismbi';
+
+const sheet = resultToSheet(model.query({ groupBy: ['Region[Group]'], values: ['Total Sales', 'Orders'], totals: true }), 'By group');
+const bytes = buildXlsx([sheet]); // new Blob([bytes], { type: XLSX_MIME }) to download
+return { columns: sheet.columns, rows: sheet.rows, bytes: bytes.length };</code></pre></div>
+<h2 id="bookmarks">Bookmarks <a class="anchor" href="#bookmarks" aria-label="Link to this section">#</a></h2>
+<p>A bookmark captures the current page, report and page filters, every slicer, the selection and drill states.</p>
+<div class="code"><pre><code class="lang-ts">const bm = report.captureBookmark('West, last 6 months');
+report.applyBookmark(bm);                 // or by name
+report.bookmarkList();
+report.on('bookmarkApplied', (e) =&gt; ...);</code></pre></div>
+<p>Bookmarks are included in <code>report.toJSON()</code>.</p>
+<h2 id="programmatic-control">Programmatic control <a class="anchor" href="#programmatic-control" aria-label="Link to this section">#</a></h2>
+<div class="code"><pre><code class="lang-ts">report.goToPage('Details');
+report.setReportFilters([{ target: 'Date[Year]', op: 'eq', value: 2025 }]);
+report.setPageFilters('overview', [{ target: 'Products[Category]', op: 'notIn', values: ['Accessories'] }]);
+report.setVisualFilters('top-products', [{ target: 'Products[Name]', op: 'topN', n: 10, by: 'Total Sales' }]);
+report.getFilters();          // { report, page, slicers }
+report.clearSelection();
+report.reset();               // clear slicers, selection and drill on the current page</code></pre></div>
+<h2 id="keyboard">Keyboard <a class="anchor" href="#keyboard" aria-label="Link to this section">#</a></h2>
+<p>Everything that works with a mouse also works from the keyboard:</p>
+<div class="table"><table><thead><tr><th>Where</th><th>Keys</th></tr></thead><tbody><tr><td>Data points</td><td>Each visual is one Tab stop: the last data point you focused, or the first. Arrow keys move between points, and Home / End jump to the ends. Enter or Space selects (Ctrl adds to the selection). Shift+F10 or the context-menu key opens the right-click menu.</td></tr><tr><td>Context menu</td><td>Up / Down, Home / End, Enter. Escape or Tab closes it, and focus goes back to the data point.</td></tr><tr><td>Page tabs</td><td>One Tab stop (the current page). Left / Right, Home / End switch pages.</td></tr><tr><td>Report</td><td>Escape clears the selection, or leaves focus mode.</td></tr><tr><td>Table headers</td><td>Enter or Space sorts.</td></tr><tr><td>Edit mode</td><td>Focus a visual to select it. Arrow keys move it one grid cell (with the rest of the selection), and Shift+arrows resize it.</td></tr></tbody></table></div>
+<p>Data points show their tooltip on focus, and every chart has a plain-language description for screen readers (see <code>describe()</code>).</p>
+<h2 id="events">Events <a class="anchor" href="#events" aria-label="Link to this section">#</a></h2>
+<div class="table"><table><thead><tr><th>Event</th><th>Payload</th></tr></thead><tbody><tr><td><code>selectionChanged</code></td><td><code>{ pageId, visualId, identities, filters }</code></td></tr><tr><td><code>filtersChanged</code></td><td><code>{ pageId, scope: 'report'|'page'|'visual'|'slicer', visualId?, filters }</code></td></tr><tr><td><code>dataPointClick</code></td><td><code>{ visualId, keys, identity, event }</code></td></tr><tr><td><code>drill</code></td><td><code>{ visualId, level, path }</code></td></tr><tr><td><code>pageChanged</code></td><td><code>{ pageId, name }</code></td></tr><tr><td><code>rendered</code></td><td><code>{ visualId, ms }</code></td></tr><tr><td><code>error</code></td><td><code>{ visualId, error }</code></td></tr><tr><td><code>drillThrough</code></td><td><code>{ fromPageId, toPageId, visualId?, filters }</code></td></tr><tr><td><code>themeChanged</code>, <code>bookmarkApplied</code></td><td><code>{ name }</code></td></tr></tbody></table></div>
+<div class="code"><pre><code class="lang-ts">const off = report.on('dataPointClick', ({ keys }) =&gt; router.push(`/category/${keys[0]}`));
+off();</code></pre></div>
+<h2 id="usage-analytics">Usage analytics <a class="anchor" href="#usage-analytics" aria-label="Link to this section">#</a></h2>
+<p><code>onUsage</code> gets one record per page view (including the first) and per interaction, ready for any analytics sink:</p>
+<div class="code"><pre><code class="lang-ts">new Report(el, { model, pages, onUsage: (e) =&gt; analytics.track(e.type, e) });
+// { type: 'interaction', action: 'filter', report: 'Sales', pageId, page: 'Overview', visualId: 'region', at, detail: { scope, filters } }</code></pre></div>
+<p>Actions are <code>select</code>, <code>drill</code>, <code>drillThrough</code>, <code>filter</code> and <code>bookmark</code>. A handler that throws is logged and doesn't break the report.</p>
+<h2 id="conditional-visibility">Conditional visibility <a class="anchor" href="#conditional-visibility" aria-label="Link to this section">#</a></h2>
+<p><code>visibleWhen</code> shows a visual only when a condition holds. It's evaluated against the filters reaching that visual (slicers, selections, page and report filters), so it updates as viewers interact:</p>
+<div class="code"><pre><code class="lang-ts">{ type: 'table', fields: { /* … */ }, visibleWhen: { field: 'Product[Category]' } }                 // once a category is picked
+{ type: 'card', fields: { /* … */ }, visibleWhen: { field: 'Region[Country]', is: ['Canada'] } }   // only for Canada
+{ type: 'textbox', format: { /* … */ }, visibleWhen: { field: 'Product[Category]', is: 'notSelected' } } // a &quot;pick a category&quot; hint
+{ type: 'card', fields: { /* … */ }, visibleWhen: { roles: ['Managers'] } }                        // only for an active RLS role</code></pre></div>
+<p><code>field</code> and <code>roles</code> combine (both must hold). Hidden visuals don't run queries. In edit mode every visual stays visible, so authors can still lay them out. <code>report.isVisualVisible(id)</code> tells you the current state.</p>
+<h2 id="try-it">Try it <a class="anchor" href="#try-it" aria-label="Link to this section">#</a></h2>
+<p>A slicer and two charts that filter each other. Click a bar or pick a year:</p>
+<div class="code"><a class="run" href="../playground.html#interactions%2F1">▶ Run in playground</a><pre><code class="lang-js">import { Report } from '@prismbi/prismbi';
+
+const report = new Report(el, {
+  model,
+  chrome: { toolbar: false },
+  pages: [{
+    name: 'Sales',
+    visuals: [
+      { id: 'year', type: 'slicer', layout: { x: 0, y: 0, w: 3, h: 6 }, fields: { field: 'Date[Year]' } },
+      { id: 'cat', type: 'clusteredBar', title: 'By category', layout: { x: 3, y: 0, w: 9, h: 6 }, fields: { category: 'Product[Category]', values: 'Total Sales' } },
+      { id: 'trend', type: 'line', title: 'By month', layout: { x: 0, y: 6, w: 12, h: 6 }, fields: { category: 'Date[MonthYear]', values: 'Total Sales' } },
+    ],
+  }],
+});
+report.on('selectionChanged', (e) =&gt; console.log('filters', e.filters));
+return report;</code></pre></div>
+<p>On the docs site (<code>npm run docs</code>), <strong>▶ Run in playground</strong> opens it in an editor next to its output.</p></main><script>
+const box=document.getElementById('q'),list=document.getElementById('nav-list'),res=document.getElementById('results');
+let index=null;
+box.addEventListener('input',async()=>{const q=box.value.trim().toLowerCase();if(!q){res.hidden=true;list.hidden=false;return}
+index??=await (await fetch('search.json')).json();
+const hits=index.filter(e=>e.t.toLowerCase().includes(q)||e.x.includes(q)).slice(0,20);
+res.innerHTML=hits.map(e=>'<li><a href="'+e.u+'">'+e.t.replace(/</g,'&lt;')+'<small>'+e.p.replace(/</g,'&lt;')+'</small></a></li>').join('')||'<li><a>No results</a></li>';
+res.hidden=false;list.hidden=true});
+</script></body></html>

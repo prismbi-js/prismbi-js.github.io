@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Importing Power BI projects · PrismBI docs</title><link rel="stylesheet" href="docs.css"></head>
+<body><nav aria-label="Guides"><a class="brand" href="index.html">PrismBI docs</a>
+<input id="q" type="search" placeholder="Search the guides" aria-label="Search the guides">
+<ul id="results" class="results" hidden></ul>
+<ul id="nav-list"><li><a href="getting-started.html">Getting started</a></li><li><a href="data-model.html">Data modeling</a></li><li><a href="expressions.html">Expressions (DAX subset)</a></li><li><a href="advanced-modeling.html">Advanced modeling</a></li><li><a href="tooling.html">DAX tooling</a></li><li><a href="visuals.html">Visuals reference</a></li><li><a href="interactions.html">Slicing, filtering and interactions</a></li><li><a href="theming.html">Theming and formatting</a></li><li><a href="studio.html">Studio (report editor)</a></li><li><a href="react.html">React</a></li><li><a href="frameworks.html">Web components, Vue, Svelte and Angular</a></li><li><a href="custom-visuals.html">Custom visuals</a></li><li><a href="ai.html">AI: questions, explanations, insights and agents</a></li><li><a href="transforms.html">Transforms: clean and reshape data (Power Query-style)</a></li><li><a href="connectors.html">Connectors and live data</a></li><li><a href="sql.html">SQL pushdown: DuckDB, Postgres and SQLite</a></li><li><a href="performance.html">Performance and scale</a></li><li><a href="files.html">Report files and version control</a></li><li><a href="server.html">Server: headless rendering, alerts and schedules</a></li><li><a href="collab.html">Collaboration: co-editing, presence and comments</a></li><li><a href="plugins.html">Plugins: signed visuals, themes and connectors</a></li><li><a href="powerbi.html" aria-current="page">Importing Power BI projects</a></li><li><a href="../playground.html">▶ Playground</a></li><li><a href="../index.html">Live demo</a></li><li><a href="https://github.com/prismbi-js/prismbi">GitHub</a></li><li><a href="https://www.npmjs.com/package/@prismbi/prismbi">npm</a></li></ul></nav>
+<main><h1 id="importing-power-bi-projects">Importing Power BI projects</h1>
+<p><code>@prismbi/prismbi/powerbi</code> reads a Power BI project saved as <code>.pbip</code> and turns it into a PrismBI model and report. To get one, use <strong>File › Save as › Power BI project</strong> in Power BI Desktop.</p>
+<div class="code"><pre><code class="lang-ts">import { importPowerBI } from '@prismbi/prismbi/powerbi';
+import { loadCsv } from '@prismbi/prismbi/connectors';
+
+const { model, report, warnings } = importPowerBI(files, {
+  data: { Sales: await loadCsv('/data/sales.csv'), Product: await loadCsv('/data/product.csv') },
+});
+new Report(el, { model, ...report });
+console.warn(warnings); // everything that could not be imported, in plain language</code></pre></div>
+<p><code>files</code> maps paths inside the project folder to their text, for example <code>{ 'Shop.SemanticModel/definition/tables/Sales.tmdl': '…', 'Shop.Report/definition/pages/…/visual.json': '…' }</code>. In Node, read the folder recursively; in a browser, use a folder picker.</p>
+<h2 id="what-comes-across">What comes across <a class="anchor" href="#what-comes-across" aria-label="Link to this section">#</a></h2>
+<div class="table"><table><thead><tr><th>Part</th><th>Imported</th></tr></thead><tbody><tr><td>Semantic model (TMDL, or <code>model.bim</code> in older projects)</td><td>tables and typed columns, hidden flags, formats, display folders, descriptions; calculated columns and calculated tables; measures (single-line, multi-line and fenced DAX); relationships (active or inactive, single or both directions); calculation groups with their items, ordinals, precedence and format strings (static or dynamic)</td></tr><tr><td>Report (PBIR folder format, or legacy <code>report.json</code>)</td><td>pages in order, hidden pages, visuals with their fields, titles and positions (converted to the 12-column grid)</td></tr><tr><td>Visuals</td><td>column, bar and 100% variants, line, area, stacked area, combo, ribbon, waterfall, pie, donut, treemap, funnel, scatter, card, multi-row card, KPI, gauge, table, matrix, slicer, map, filled map, decomposition tree, text box</td></tr></tbody></table></div>
+<ul><li>
+<strong>Data:</strong> projects don't contain rows. Pass rows per table in <code>data</code>, from CSV, REST, SQL or any connector. Tables without data are created empty with their typed columns, so the model and report still load.
+</li><li>
+<strong>Not imported:</strong>
+<ul><li>
+Power Query (M) steps; rebuild them as <a href="transforms.html">transforms</a> if needed
+</li><li>
+visual formatting beyond titles, bookmarks and filters
+</li><li>
+custom visuals
+</li><li>
+DAX functions PrismBI doesn't support
+</li></ul>
+</li><li>
+<strong>Warnings:</strong> each gap appears in <code>warnings</code>. Measures with unsupported functions are still added so you can fix them.
+</li></ul>
+<h2 id="command-line">Command line <a class="anchor" href="#command-line" aria-label="Link to this section">#</a></h2>
+<div class="code"><pre><code class="lang-bash">npx @prismbi/prismbi pbip ./Shop report.json
+# 2 tables, 4 measures, 1 relationships, 3 pages, 11 visuals → report.json
+#   ! Visual &quot;a1b2&quot; of type someCustomVisual is not supported and was skipped</code></pre></div>
+<p>The command converts the report and prints a compatibility summary. It's a quick way to check how much of a project PrismBI can run.</p>
+<h2 id="lower-level-pieces">Lower-level pieces <a class="anchor" href="#lower-level-pieces" aria-label="Link to this section">#</a></h2>
+<ul><li>
+<strong><code>parseTmdl(texts)</code> and <code>parseModelBim(json)</code>:</strong> return the semantic model as plain objects (<code>PbiModel</code>).
+</li><li>
+<strong><code>buildModelFrom(pbiModel, { data, model })</code>:</strong> builds or extends a <code>DataModel</code>.
+</li><li>
+<strong><code>mapPbirReport(files)</code> and <code>mapLegacyReport(json)</code>:</strong> return a <code>ReportDefinition</code>.
+</li></ul></main><script>
+const box=document.getElementById('q'),list=document.getElementById('nav-list'),res=document.getElementById('results');
+let index=null;
+box.addEventListener('input',async()=>{const q=box.value.trim().toLowerCase();if(!q){res.hidden=true;list.hidden=false;return}
+index??=await (await fetch('search.json')).json();
+const hits=index.filter(e=>e.t.toLowerCase().includes(q)||e.x.includes(q)).slice(0,20);
+res.innerHTML=hits.map(e=>'<li><a href="'+e.u+'">'+e.t.replace(/</g,'&lt;')+'<small>'+e.p.replace(/</g,'&lt;')+'</small></a></li>').join('')||'<li><a>No results</a></li>';
+res.hidden=false;list.hidden=true});
+</script></body></html>

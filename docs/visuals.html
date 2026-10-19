@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visuals reference · PrismBI docs</title><link rel="stylesheet" href="docs.css"></head>
+<body><nav aria-label="Guides"><a class="brand" href="index.html">PrismBI docs</a>
+<input id="q" type="search" placeholder="Search the guides" aria-label="Search the guides">
+<ul id="results" class="results" hidden></ul>
+<ul id="nav-list"><li><a href="getting-started.html">Getting started</a></li><li><a href="data-model.html">Data modeling</a></li><li><a href="expressions.html">Expressions (DAX subset)</a></li><li><a href="advanced-modeling.html">Advanced modeling</a></li><li><a href="tooling.html">DAX tooling</a></li><li><a href="visuals.html" aria-current="page">Visuals reference</a></li><li><a href="interactions.html">Slicing, filtering and interactions</a></li><li><a href="theming.html">Theming and formatting</a></li><li><a href="studio.html">Studio (report editor)</a></li><li><a href="react.html">React</a></li><li><a href="frameworks.html">Web components, Vue, Svelte and Angular</a></li><li><a href="custom-visuals.html">Custom visuals</a></li><li><a href="ai.html">AI: questions, explanations, insights and agents</a></li><li><a href="transforms.html">Transforms: clean and reshape data (Power Query-style)</a></li><li><a href="connectors.html">Connectors and live data</a></li><li><a href="sql.html">SQL pushdown: DuckDB, Postgres and SQLite</a></li><li><a href="performance.html">Performance and scale</a></li><li><a href="files.html">Report files and version control</a></li><li><a href="server.html">Server: headless rendering, alerts and schedules</a></li><li><a href="collab.html">Collaboration: co-editing, presence and comments</a></li><li><a href="plugins.html">Plugins: signed visuals, themes and connectors</a></li><li><a href="powerbi.html">Importing Power BI projects</a></li><li><a href="../playground.html">▶ Playground</a></li><li><a href="../index.html">Live demo</a></li><li><a href="https://github.com/prismbi-js/prismbi">GitHub</a></li><li><a href="https://www.npmjs.com/package/@prismbi/prismbi">npm</a></li></ul></nav>
+<main><h1 id="visuals-reference">Visuals reference</h1>
+<p>Every visual is a <code>VisualSpec</code>:</p>
+<div class="code"><pre><code class="lang-ts">{
+  id?: string;                      // stable id (auto-generated otherwise)
+  type: 'clusteredColumn';          // see the table below
+  title?: string;
+  layout?: { x, y, w, h, z? };      // grid units (page default: 12 columns × 44px rows)
+  fields?: { [role]: FieldSpec | FieldSpec[] };
+  filters?: FilterSpec[];           // visual-level filters
+  format?: { ...format pane };      // see &quot;Common format options&quot; below
+  sort?: { field: 'Total Sales', direction: 'desc' };
+  top?: number;                     // keep first N groups after sorting
+  interaction?: 'filter' | 'highlight' | 'none';   // how it reacts to other visuals
+  interactionsFrom?: { [sourceVisualId]: 'filter' | 'highlight' | 'none' };
+  drill?: { level, path, skip? };   // persisted drill state
+  hidden?: boolean; className?: string; style?: string;
+}</code></pre></div>
+<p>A <code>FieldSpec</code> is one of:</p>
+<ul><li>
+a measure name, e.g. <code>'Total Sales'</code>
+</li><li>
+a column ref, e.g. <code>'Products[Category]'</code>. In a measure role, this gets an implicit aggregation.
+</li><li>
+<code>{ field: 'Sales[Qty]', aggregation: 'avg', name: 'Avg qty', format: '#,0.0' }</code>
+</li><li>
+<code>{ expression: 'SUM(Sales[Amount]) * 1.1', name: 'Forecast', format: '$#,0' }</code>
+</li></ul>
+<h2 id="gallery">Gallery <a class="anchor" href="#gallery" aria-label="Link to this section">#</a></h2>
+<p>Every built-in visual with the demo data (light theme). The same images back the visual regression tests.</p>
+<div class="table"><table><thead><tr><th></th><th></th><th></th></tr></thead><tbody><tr><td><img src="images/visuals/area.png" alt="area" loading="lazy"> <code>area</code></td><td><img src="images/visuals/boxPlot.png" alt="boxPlot" loading="lazy"> <code>boxPlot</code></td><td><img src="images/visuals/bullet.png" alt="bullet" loading="lazy"> <code>bullet</code></td></tr><tr><td><img src="images/visuals/calendar.png" alt="calendar" loading="lazy"> <code>calendar</code></td><td><img src="images/visuals/card.png" alt="card" loading="lazy"> <code>card</code></td><td><img src="images/visuals/clusteredBar.png" alt="clusteredBar" loading="lazy"> <code>clusteredBar</code></td></tr><tr><td><img src="images/visuals/clusteredColumn.png" alt="clusteredColumn" loading="lazy"> <code>clusteredColumn</code></td><td><img src="images/visuals/decompositionTree.png" alt="decompositionTree" loading="lazy"> <code>decompositionTree</code></td><td><img src="images/visuals/donut.png" alt="donut" loading="lazy"> <code>donut</code></td></tr><tr><td><img src="images/visuals/funnel.png" alt="funnel" loading="lazy"> <code>funnel</code></td><td><img src="images/visuals/gauge.png" alt="gauge" loading="lazy"> <code>gauge</code></td><td><img src="images/visuals/heatmap.png" alt="heatmap" loading="lazy"> <code>heatmap</code></td></tr><tr><td><img src="images/visuals/histogram.png" alt="histogram" loading="lazy"> <code>histogram</code></td><td><img src="images/visuals/kpi.png" alt="kpi" loading="lazy"> <code>kpi</code></td><td><img src="images/visuals/line.png" alt="line" loading="lazy"> <code>line</code></td></tr><tr><td><img src="images/visuals/lineClusteredColumn.png" alt="lineClusteredColumn" loading="lazy"> <code>lineClusteredColumn</code></td><td><img src="images/visuals/map.png" alt="map" loading="lazy"> <code>map</code></td><td><img src="images/visuals/matrix.png" alt="matrix" loading="lazy"> <code>matrix</code></td></tr><tr><td><img src="images/visuals/multiRowCard.png" alt="multiRowCard" loading="lazy"> <code>multiRowCard</code></td><td><img src="images/visuals/percentStackedBar.png" alt="percentStackedBar" loading="lazy"> <code>percentStackedBar</code></td><td><img src="images/visuals/percentStackedColumn.png" alt="percentStackedColumn" loading="lazy"> <code>percentStackedColumn</code></td></tr><tr><td><img src="images/visuals/pie.png" alt="pie" loading="lazy"> <code>pie</code></td><td><img src="images/visuals/radar.png" alt="radar" loading="lazy"> <code>radar</code></td><td><img src="images/visuals/ribbon.png" alt="ribbon" loading="lazy"> <code>ribbon</code></td></tr><tr><td><img src="images/visuals/sankey.png" alt="sankey" loading="lazy"> <code>sankey</code></td><td><img src="images/visuals/scatter.png" alt="scatter" loading="lazy"> <code>scatter</code></td><td><img src="images/visuals/scatter-webgl.png" alt="scatter-webgl" loading="lazy"> <code>scatter-webgl</code></td></tr><tr><td><img src="images/visuals/slicer-list.png" alt="slicer-list" loading="lazy"> <code>slicer-list</code></td><td><img src="images/visuals/slicer-range.png" alt="slicer-range" loading="lazy"> <code>slicer-range</code></td><td><img src="images/visuals/slicer-tiles.png" alt="slicer-tiles" loading="lazy"> <code>slicer-tiles</code></td></tr><tr><td><img src="images/visuals/stackedArea.png" alt="stackedArea" loading="lazy"> <code>stackedArea</code></td><td><img src="images/visuals/stackedBar.png" alt="stackedBar" loading="lazy"> <code>stackedBar</code></td><td><img src="images/visuals/stackedColumn.png" alt="stackedColumn" loading="lazy"> <code>stackedColumn</code></td></tr><tr><td><img src="images/visuals/table.png" alt="table" loading="lazy"> <code>table</code></td><td><img src="images/visuals/text.png" alt="text" loading="lazy"> <code>text</code></td><td><img src="images/visuals/treemap.png" alt="treemap" loading="lazy"> <code>treemap</code></td></tr><tr><td><img src="images/visuals/waterfall.png" alt="waterfall" loading="lazy"> <code>waterfall</code></td><td></td><td></td></tr></tbody></table></div>
+<h2 id="catalogue">Catalogue <a class="anchor" href="#catalogue" aria-label="Link to this section">#</a></h2>
+<div class="table"><table><thead><tr><th>Type (aliases)</th><th>Roles</th><th>Notes</th></tr></thead><tbody><tr><td><code>clusteredColumn</code> (<code>column</code>)</td><td><code>category</code>* (drillable, multiple) · <code>legend</code> · <code>values</code>* (multiple) · <code>smallMultiples</code></td><td>Sorted by first value, descending, unless the category is a number, a date or has sort-by</td></tr><tr><td><code>stackedColumn</code>, <code>percentStackedColumn</code></td><td>same</td><td>2 px gaps between segments. Categories sorted by total</td></tr><tr><td><code>clusteredBar</code> (<code>bar</code>), <code>stackedBar</code>, <code>percentStackedBar</code></td><td>same</td><td>Horizontal versions</td></tr><tr><td><code>line</code></td><td><code>category</code>* (drillable) · <code>legend</code> · <code>values</code>* · <code>smallMultiples</code></td><td>Crosshair tooltip, end labels (four or fewer series), markers (16 or fewer points), cross-highlight</td></tr><tr><td><code>area</code>, <code>stackedArea</code></td><td>same</td><td>10% area wash. Stacked area sums series</td></tr><tr><td><code>lineClusteredColumn</code> (<code>combo</code>)</td><td><code>category</code>* · <code>legend</code> (columns) · <code>values</code> (columns) · <code>lineValues</code></td><td><strong>One shared value axis</strong> by design. A second y-axis is a known chart anti-pattern</td></tr><tr><td><code>waterfall</code></td><td><code>category</code>* (drillable) · <code>values</code>*</td><td>Running total with connectors, increase / decrease / total colours, optional total bar</td></tr><tr><td><code>pie</code>, <code>donut</code></td><td><code>legend</code>* (drillable) · <code>values</code>*</td><td>Folds slices past the palette into &quot;Other&quot;. Donut shows a centre total</td></tr><tr><td><code>treemap</code></td><td><code>category</code>* (drillable) · <code>values</code>*</td><td>Squarified layout</td></tr><tr><td><code>funnel</code></td><td><code>category</code>* · <code>values</code>*</td><td>Shows % of first stage</td></tr><tr><td><code>scatter</code> (<code>bubble</code>)</td><td><code>details</code>* · <code>legend</code> · <code>x</code>* · <code>y</code>* · <code>size</code></td><td>Bubble area ∝ size. Cross-highlight, trend line</td></tr><tr><td><code>heatmap</code></td><td><code>rows</code>* · <code>columns</code>* · <code>values</code>*</td><td>Sequential single-hue ramp, gradient legend, cell labels when they fit</td></tr><tr><td><code>decompositionTree</code> (<code>decomp</code>)</td><td><code>values</code>* · <code>explainBy</code>* (multiple)</td><td>Split a total level by level, click nodes to narrow down, automatic &quot;High value / Low value&quot; splits. Cross-filters the page</td></tr><tr><td><code>histogram</code></td><td><code>values</code>* (numeric column) · <code>weight</code> (optional measure)</td><td>Bins by Sturges' rule or <code>format.histogram.bins</code> / <code>binWidth</code></td></tr><tr><td><code>boxPlot</code></td><td><code>category</code> · <code>values</code>* (numeric column)</td><td>Quartiles, 1.5 × IQR whiskers, outliers, mean marker</td></tr><tr><td><code>bullet</code></td><td><code>category</code> · <code>value</code>* · <code>target</code> · <code>maximum</code></td><td>Value bar over qualitative bands with a target tick</td></tr><tr><td><code>radar</code></td><td><code>category</code>* (spokes, 3 or more) · <code>legend</code> · <code>values</code>*</td><td>One polygon per series on a shared radial scale</td></tr><tr><td><code>sankey</code></td><td><code>source</code>* · <code>target</code>* · <code>values</code>*</td><td>Multi-stage flows (a target that is also a source becomes a middle column)</td></tr><tr><td><code>ribbon</code></td><td><code>category</code>* · <code>legend</code>* · <code>values</code>*</td><td>Stacked by rank in each column, with ribbons showing rank changes</td></tr><tr><td><code>map</code> (<code>bubbleMap</code>)</td><td><code>location</code>* · <code>legend</code> · <code>latitude</code> · <code>longitude</code> · <code>size</code></td><td>Columns are averaged per location. Without latitude and longitude, bubbles sit at the centre of their region (<code>format.map.boundaries</code> or <code>geojson</code>). Optional clustering</td></tr><tr><td><code>filledMap</code> (<code>choropleth</code>)</td><td><code>location</code>* · <code>values</code>*</td><td>Built-in <code>boundaries</code> (<code>@prismbi/prismbi/geo</code>) or your <code>geojson</code>. Gradient or classed legend</td></tr><tr><td><code>card</code></td><td><code>value</code>* · <code>delta</code></td><td>Auto-sized callout value, signed delta with good/bad colour</td></tr><tr><td><code>multiRowCard</code></td><td><code>category</code> · <code>values</code>*</td><td>One card per group</td></tr><tr><td><code>kpi</code></td><td><code>trend</code> · <code>value</code>* · <code>target</code></td><td>Headline is the last trend point. Shows % vs goal and a sparkline</td></tr><tr><td><code>gauge</code></td><td><code>value</code>* · <code>min</code> · <code>max</code> · <code>target</code></td><td>180° arc</td></tr><tr><td><code>table</code></td><td><code>columns</code>* (columns and measures mixed)</td><td>Click a header to sort. Totals, conditional formatting, incremental rendering</td></tr><tr><td><code>matrix</code></td><td><code>rows</code> (hierarchy) · <code>columns</code> · <code>values</code>*</td><td>Expand/collapse, column pivot, real subtotals and totals</td></tr><tr><td><code>slicer</code></td><td><code>field</code>* (several fields give a hierarchy tree)</td><td>list · dropdown · tiles · between · relative date · tree. Sync groups across pages</td></tr><tr><td><code>text</code> (<code>textbox</code>)</td><td><code>values</code> (optional)</td><td>Mini-markdown with <code>{{Measure name}}</code> placeholders</td></tr></tbody></table></div>
+<p><code>*</code> marks a required role.</p>
+<p><strong>Small multiples:</strong> put a field in <code>smallMultiples</code> (column, bar, line and area charts) to get one panel per member, with a shared value axis and a single legend. Configure it with <code>format.smallMultiples: { columns?, sharedAxis: true, minWidth: 160, minHeight: 110 }</code>.</p>
+<h2 id="common-format-options">Common format options <a class="anchor" href="#common-format-options" aria-label="Link to this section">#</a></h2>
+<p>All of these are optional. Values merge as: base defaults ← visual defaults ← <code>theme.visualStyles['*']</code> ← <code>theme.visualStyles[type]</code> ← <code>spec.format</code>.</p>
+<div class="code"><pre><code class="lang-ts">format: {
+  title:      { show: true, text, subtitle, fontSize, color, align: 'left'|'center'|'right', bold: true },
+  background: { show: true, color, transparency: 0 },          // 0–100
+  border:     { show: true, color, width: 1, radius },
+  shadow:     { show: false },
+  padding:    12,
+  header:     { show: true, focusMode: true, exportData: true, showAsTable: true, drill: true },
+  tooltip:    { show: true, page: 'tooltip-page-id' },  // report tooltip page
+  legend:     { show: 'auto' | true | false, position: 'top'|'bottom'|'left'|'right', fontSize },
+  dataLabels: { show: false, format, displayUnits: 'auto', decimals, fontSize, color, position: 'auto' },
+  categoryAxis: { show: true, maxLabelWidth: 120, labelAngle: 'auto'|0|45|90,
+                  type: 'auto'|'categorical'|'continuous',   // auto = continuous for date/number fields on line &amp; area
+                  scale: 'linear'|'log' },                   // scatter x-axis
+  valueAxis:  { show: true, displayUnits: 'auto', decimals, min, max, gridlines: true, tickCount: 5, scale: 'linear'|'log' },
+  colors:     { default, palette: [...], series: { 'Total Sales': '#...' }, categories: { 'Bikes': '#...' },
+                rules: [{ op: '&lt;', value: 0, color: '#d03b3b' }],      // single-series charts, first match wins
+                gradient: { min: '#cde2fb', max: '#0d366b' } },        // single-series charts, by value
+  analytics:  { referenceLines: [{ type: 'average' | 'median' | 'min' | 'max' | 'percentile' | 'constant', value?, percentile?, label?: 'Goal {value}' | false, color?, dash? }],
+                trendLine: false | true | { color } },
+  bars:       { maxThickness: 24, radius: 4, gap: 2, categoryGap: 0.35 },
+  lines:      { width: 2, markers: 'auto', smooth: false, area: false, areaOpacity: 0.1, endLabels: true },
+  animation:  { enabled: true, duration: 280 },
+}</code></pre></div>
+<p><code>legend.show: 'auto'</code> shows a legend when there are two or more series, and hides it for one series because the title already says what is plotted.</p>
+<p><code>animation</code> controls motion. On the first render, charts grow in. When the data changes (a filter, a slicer or a selection), each data point moves from where it was to its new place, matched by its identity (category, series). Points that are new fade in. Lines and areas morph when their shape allows it. <code>duration</code> is in milliseconds. Users with <code>prefers-reduced-motion</code> get no animation. Exports always capture the final state.</p>
+<h3 id="visual-specific-sections">Visual-specific sections <a class="anchor" href="#visual-specific-sections" aria-label="Link to this section">#</a></h3>
+<div class="code"><pre><code class="lang-ts">// card
+format: { card: { labelPosition: 'top'|'bottom', showLabel: true, align: 'left'|'center', valueFontSize, upIsGood: true, deltaLabel: 'vs LY' } }
+
+// kpi
+format: { kpi: { upIsGood: true } }
+
+// pie / donut
+format: { pie: { maxSlices: 8 }, donut: { innerRadius: 0.62, centerLabel: true } }
+
+// table
+format: { table: {
+  totals: true, rowBanding: true, wrap: false, density: 'compact'|'normal'|'comfortable', pageSize: 200,
+  columnWidths: { 'Total Sales': 140 },
+  conditional: {
+    'Total Sales': { dataBars: true },                         // or { color, negativeColor }
+    'Margin %':    { background: true },                       // or { min, mid, max } colours
+    'YoY %':       { icons: true },                            // ▲ ▼ ● by sign
+    'Profit':      { rules: [{ op: '&lt;', value: 0, color: '#d03b3b' }, { op: 'between', value: 0, value2: 1000, background: '#fff4d6' }] },
+  },
+} }
+
+// matrix
+format: { matrix: { expandAll: false, columnTotals: true, conditional: { /* as table */ } } }
+
+// slicer
+format: { slicer: {
+  style: 'list' | 'dropdown' | 'tiles' | 'between' | 'relative' | 'slider',   // dates default to 'between'; 'slider' = one value (what-if)
+  single: false, search: true, selectAll: true, orientation: 'horizontal', placeholder: 'All',
+  relative: { anchor: 'last'|'next'|'this', n: 30, unit: 'days'|'weeks'|'months'|'years', includeToday: true },
+} }
+
+// text
+format: { text: { content: '# Heading\n**{{Total Sales}}** this period. [Docs](https://example.com)' } }
+
+// waterfall
+format: { waterfall: { showTotal: true, totalLabel: 'Total', increaseColor, decreaseColor, totalColor } }
+
+// decomposition tree
+format: { decomposition: { maxNodes: 10, aiSplits: true, columnWidth: 190 } }
+
+// histogram
+format: { histogram: { bins: 20, binWidth: 50 } }
+
+// bullet
+format: { bullet: { bands: [0.6, 0.85, 1], sharedScale: true } }
+
+// maps (bubble and filled)
+format: { map: {
+  boundaries: 'world',                     // or 'usStates': built-in outlines, after import '@prismbi/prismbi/geo'
+  geojson: featureCollection,              // or your own outlines
+  featureKey: 'name',                      // property (or list) matched against the location field
+  legend: 'classes', classes: 5,           // filled maps: quantile classes instead of a gradient
+  cluster: { radius: 40 },                 // bubble maps: group nearby bubbles; click or Enter zooms in
+  tiles: 'https://tiles.example.com/{z}/{x}/{y}.png', attribution: '© provider',   // optional raster basemap
+  maxRadius: 28, zoom: true, graticule: true,
+} }
+
+// scatter: force a renderer (auto: SVG, canvas above 3,000 points, WebGL above 50,000)
+format: { scatter: { renderer: 'auto' | 'svg' | 'canvas' | 'webgl' } }
+
+// slicer sync group (any style)
+format: { slicer: { syncGroup: 'year' } }</code></pre></div>
+<h2 id="header-actions">Header actions <a class="anchor" href="#header-actions" aria-label="Link to this section">#</a></h2>
+<p>Hovering or focusing a visual shows its header icons:</p>
+<ul><li>
+<strong>⤢ Focus mode</strong> fills the page. Esc exits.
+</li><li>
+<strong>▦ Show as table</strong> displays the query result as a table.
+</li><li>
+<strong>⇩ Export</strong> opens a menu: data (CSV or Excel), image (PNG at 2×), image (SVG). The same is available in code as <code>report.visual(id).exportCsv()</code>, <code>.exportXlsx()</code>, <code>.exportImage('png' | 'svg')</code> and <code>.toSvg()</code>.
+</li><li>
+<strong>↑ Drill up</strong>, <strong>⇊ Go to next level</strong> and <strong>⤓ Expand all down one level</strong> appear when a drillable role has several fields.
+</li><li>
+<strong>⌫ Clear selections</strong> appears on slicers.
+</li></ul>
+<p>Each of these can be turned off through <code>format.header</code>.</p>
+<h2 id="accessibility">Accessibility <a class="anchor" href="#accessibility" aria-label="Link to this section">#</a></h2>
+<p>Marks are focusable (Tab), and Enter or Space selects one. Tooltips also show on focus. Each chart has an <code>aria-label</code> from its title, and tables use real <code>&lt;table&gt;</code> markup with <code>aria-sort</code>. Animations respect <code>prefers-reduced-motion</code>.</p>
+<h2 id="forecast">Forecast <a class="anchor" href="#forecast" aria-label="Link to this section">#</a></h2>
+<p>Line and area charts with a date or number axis can extend each series (up to three) with a forecast:</p>
+<p><img src="images/visuals/line-forecast.png" alt="A line chart with a forecast band" loading="lazy"></p>
+<div class="code"><pre><code class="lang-ts">{ type: 'line', fields: { category: 'Date[Date]', values: 'Total Sales' },
+  format: { analytics: { forecast: { periods: 30, confidence: 0.95, seasonality: 'auto' } } } }</code></pre></div>
+<ul><li>
+<strong>Model:</strong> damped additive Holt-Winters. Its parameters are chosen by one-step-ahead error, and the season length is detected by autocorrelation, or given as a number, or turned off with <code>'none'</code>.
+</li><li>
+<strong>Display:</strong> the forecast is a dashed line inside a shaded prediction interval that widens with the horizon.
+</li><li>
+<strong>Non-negative series:</strong> a series that has never been negative (sales, counts) is never forecast below zero.
+</li><li>
+<strong>Dates:</strong> future dates follow the calendar for monthly, quarterly and yearly data.
+</li></ul>
+<h2 id="error-bars">Error bars <a class="anchor" href="#error-bars" aria-label="Link to this section">#</a></h2>
+<p>Clustered column and bar charts with a single series accept two optional measure roles, <strong>Error bars: lower</strong> (<code>errorLower</code>) and <strong>Error bars: upper</strong> (<code>errorUpper</code>):</p>
+<p><img src="images/visuals/column-error-bars.png" alt="A column chart with error bars" loading="lazy"></p>
+<div class="code"><pre><code class="lang-ts">{ type: 'clusteredColumn', fields: { category: 'Product[Category]', values: 'Avg Price', errorLower: 'Price P10', errorUpper: 'Price P90' } }</code></pre></div>
+<ul><li>
+<strong>Drawing:</strong> each bar gets a whisker with caps between the two bounds. With only one bound, the whisker runs from the bar's value to that bound.
+</li><li>
+<strong>Axis:</strong> the value axis grows to include the bounds.
+</li><li>
+<strong>Tooltip:</strong> shows the range.
+</li></ul>
+<h2 id="maps-and-built-in-boundaries">Maps and built-in boundaries <a class="anchor" href="#maps-and-built-in-boundaries" aria-label="Link to this section">#</a></h2>
+<div class="table"><table><thead><tr><th>Filled map (classes)</th><th>Bubbles at country centres</th><th>Clusters</th></tr></thead><tbody><tr><td><img src="images/visuals/filled-map-world.png" alt="Filled world map" loading="lazy"></td><td><img src="images/visuals/map-countries.png" alt="Bubble map by country" loading="lazy"></td><td><img src="images/visuals/map-cluster.png" alt="Clustered bubble map" loading="lazy"></td></tr></tbody></table></div>
+<p><code>@prismbi/prismbi/geo</code> adds world countries and US states (Natural Earth 1:110m, public domain) as an optional entry. The data is about 60 KB gzipped, and you only pay for it when you import it:</p>
+<div class="code"><pre><code class="lang-ts">import '@prismbi/prismbi/geo';
+
+{ type: 'filledMap', fields: { location: 'Region[Country]', values: 'Total Sales' }, format: { map: { boundaries: 'world', legend: 'classes' } } }
+{ type: 'map', fields: { location: 'Region[Country]', size: 'Total Sales' }, format: { map: { boundaries: 'world' } } }   // bubbles at country centres
+{ type: 'filledMap', fields: { location: 'Store[State]', values: 'Orders' }, format: { map: { boundaries: 'usStates' } } }</code></pre></div>
+<ul><li>
+<strong>Matching:</strong>
+<ul><li>
+Countries match on name, long name, or ISO alpha-2 or alpha-3 code (<code>France</code>, <code>FR</code>, <code>FRA</code>). Common variants like <code>USA</code>, <code>UK</code> and <code>Czech Republic</code> work too.
+</li><li>
+States match on name, postal code or ISO 3166-2 code (<code>Texas</code>, <code>TX</code>, <code>US-TX</code>).
+</li><li>
+Locations that don't match are left out.
+</li></ul>
+</li><li>
+<strong>Framing:</strong> filled maps with built-in boundaries zoom to the regions that have data.
+</li><li>
+<strong>Your own regions:</strong> <code>registerBoundaries(name, featureCollection, { keys })</code> adds your own collection under a name. <code>worldCountries</code>, <code>usStates</code>, <code>featureCentroid</code>, <code>clusterPoints</code> and <code>quantileBreaks</code> are exported for your own geo work.
+</li><li>
+<strong>Clustering:</strong> clusters are recomputed as you zoom. Each cluster shows its count, and its tooltip lists the total and some of its locations. Click a cluster, or press Enter on it, to zoom in.
+</li></ul>
+<h2 id="calendar-heatmap">Calendar heatmap <a class="anchor" href="#calendar-heatmap" aria-label="Link to this section">#</a></h2>
+<p><code>type: 'calendar'</code> draws one square per day, with weeks as columns and weekdays as rows, and one band per year. It's coloured on the theme's sequential ramp, or by <code>format.colors.gradient</code> and rules.</p>
+<p><img src="images/visuals/calendar.png" alt="A calendar heatmap of daily sales" loading="lazy"></p>
+<div class="code"><pre><code class="lang-ts">{ type: 'calendar', fields: { date: 'Date[Date]', values: 'Total Sales' } }</code></pre></div>
+<ul><li>
+<strong>Labels:</strong> month names collapse to initials when space is tight, and weekday labels appear when the cells are large enough.
+</li><li>
+<strong>Interaction:</strong> clicking a day cross-filters the page like any data point.
+</li></ul>
+<h2 id="axis-zoom">Axis zoom <a class="anchor" href="#axis-zoom" aria-label="Link to this section">#</a></h2>
+<p><code>format.categoryAxis.zoom: true</code> adds a range slider under line and area charts. Dragging its thumbs narrows the visible part of the axis, and <strong>Reset</strong> shows everything again. The zoom is view state kept per visual, so it doesn't change filters or re-query.</p>
+<p><img src="images/visuals/line-zoom.png" alt="A line chart with a zoomed category axis" loading="lazy"></p>
+<h2 id="try-it">Try it <a class="anchor" href="#try-it" aria-label="Link to this section">#</a></h2>
+<div class="code"><a class="run" href="../playground.html#visuals%2F0">▶ Run in playground</a><pre><code class="lang-js">import { createVisual } from '@prismbi/prismbi';
+
+return createVisual(el, {
+  model,
+  type: 'waterfall',
+  title: 'Change vs last year by category',
+  fields: { category: 'Product[Category]', values: 'Sales Change' },
+  filters: [{ target: 'Date[Year]', op: 'eq', value: 2025 }],
+});</code></pre></div>
+<p>On the docs site (<code>npm run docs</code>), <strong>▶ Run in playground</strong> opens it in an editor next to its output.</p></main><script>
+const box=document.getElementById('q'),list=document.getElementById('nav-list'),res=document.getElementById('results');
+let index=null;
+box.addEventListener('input',async()=>{const q=box.value.trim().toLowerCase();if(!q){res.hidden=true;list.hidden=false;return}
+index??=await (await fetch('search.json')).json();
+const hits=index.filter(e=>e.t.toLowerCase().includes(q)||e.x.includes(q)).slice(0,20);
+res.innerHTML=hits.map(e=>'<li><a href="'+e.u+'">'+e.t.replace(/</g,'&lt;')+'<small>'+e.p.replace(/</g,'&lt;')+'</small></a></li>').join('')||'<li><a>No results</a></li>';
+res.hidden=false;list.hidden=true});
+</script></body></html>
