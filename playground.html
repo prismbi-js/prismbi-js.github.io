@@ -8,7 +8,8 @@
       :root { --bg: #f9f9f7; --fg: #1d2330; --fg2: #5b6475; --line: #dfe2e8; --side: #f1f2f4; --accent: #2f6fde; --code: #fff; color-scheme: light; }
       @media (prefers-color-scheme: dark) { :root { --bg: #111418; --fg: #e4e7ec; --fg2: #9aa3b2; --line: #2a2f38; --side: #171a20; --accent: #6aa0ff; --code: #1a1e25; color-scheme: dark; } }
       * { box-sizing: border-box; }
-      body { margin: 0; height: 100vh; display: grid; grid-template-columns: 250px minmax(0, 1fr) minmax(0, 1.1fr); grid-template-rows: 44px minmax(0, 1fr); background: var(--bg); color: var(--fg); font: 13px/1.5 system-ui, sans-serif; }
+      html { height: 100%; }
+      body { margin: 0; height: 100%; display: grid; grid-template-columns: 250px minmax(0, 1fr) minmax(0, 1.1fr); grid-template-rows: 44px minmax(0, 1fr); background: var(--bg); color: var(--fg); font: 13px/1.5 system-ui, sans-serif; }
       header { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-bottom: 1px solid var(--line); }
       header b { font-size: 15px; }
       header a { color: var(--accent); }
@@ -30,10 +31,10 @@
       #result.error { color: #d0343a; }
       @media (max-width: 900px) { body { grid-template-columns: 1fr; grid-template-rows: 44px auto 40vh minmax(60vh, auto); height: auto; } aside { max-height: 30vh; } }
     </style>
-    <script type="module" crossorigin src="/assets/playground-pgX-YZHm.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/index-D64wgeun.js">
-    <link rel="modulepreload" crossorigin href="/assets/ai-Bi_pzjh7.js">
-    <link rel="modulepreload" crossorigin href="/assets/model-BE1WJt-w.js">
+    <script type="module" crossorigin src="/assets/playground-CdrKEhg_.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/index-utg0Zlkp.js">
+    <link rel="modulepreload" crossorigin href="/assets/ai-CZ0xjie4.js">
+    <link rel="modulepreload" crossorigin href="/assets/model-CpaH7rct.js">
   </head>
   <body>
     <header>
@@ -42,8 +43,6 @@
       <span class="spacer"></span>
       <button id="reset" class="secondary" type="button">Reset</button>
       <button id="run" type="button" title="Ctrl+Enter">▶ Run</button>
-      <a href="./docs/index.html">Docs</a>
-      <a href="./index.html">Demo</a>
     </header>
     <aside id="list" aria-label="Examples"></aside>
     <div class="editor">

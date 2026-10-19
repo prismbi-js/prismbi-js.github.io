@@ -1,4 +1,4 @@
-import{m as K,v as Ce,r as ke,b as ee,p as q,d as we}from"./index-D64wgeun.js";import{a as Ne}from"./ai-Bi_pzjh7.js";import{b as De}from"./model-BE1WJt-w.js";const Ie=`# Advanced modeling
+import{m as K,v as Ce,r as ke,b as ee,p as q,d as we}from"./index-utg0Zlkp.js";import{a as Ne}from"./ai-CZ0xjie4.js";import{b as De}from"./model-CpaH7rct.js";const Ie=`# Advanced modeling
 
 These features build on [data modeling](data-model.md): relationship options, calculated tables, calculation groups, parameters, hierarchies, perspectives and row-level security.
 
