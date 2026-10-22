@@ -74,6 +74,18 @@ x.drivers; // [{ column: 'Product[Category]', value: 'Bikes', current, baseline,
   onAnomaly: ({ insight }) =&gt; notify(`${insight.title}: ${insight.detail}`),
 });</code></pre></div>
 <p>What is already unusual when watching starts doesn't alert, unless you set <code>alertExisting: true</code>. In a report definition, use <code>alerts: [{ …, when: { anomaly: true } }]</code>. The server's <code>watchAlerts</code> runs those too (see <a href="server.html">Server</a>).</p>
+<h2 id="key-influencers">Key influencers <a class="anchor" href="#key-influencers" aria-label="Link to this section">#</a></h2>
+<p><code>keyInfluencers(model, { measure, explainBy?, filters?, basis?, minShare?, max? })</code> finds the column values that move a measure most: every value of every column is compared with the overall figure, and large effects in large segments come first.</p>
+<p><img src="images/key-influencers.png" alt="The key influencers visual for margin" loading="lazy"></p>
+<div class="code"><pre><code class="lang-ts">keyInfluencers(model, { measure: 'Margin %', explainBy: ['Product[Category]', 'Region[Group]'] });
+// { metric: 'Margin %', overall: 0.273, influencers: [{ label: 'Category is Accessories', effect: '1.5× higher', segment: 0.418, share: 0.37, … }, …], columns: [...] }</code></pre></div>
+<ul><li>
+<strong>Sums and counts</strong> are compared per row (<code>basis: 'perRow'</code>, chosen automatically when the measure adds up over a column's segments): &quot;Total Sales per row is 78% lower when Category is Accessories&quot;. Averages and rates (<code>basis: 'value'</code>) are compared as they are.
+</li><li>
+<strong>Columns:</strong> <code>explainBy</code> defaults to the model's categorical columns, as for insights. Segments under <code>minShare</code> of the rows (default 5%) are ignored, and the same rows reached through two columns (a subcategory with a single product) are listed once.
+</li><li>
+<strong>The visual:</strong> <code>type: 'keyInfluencers'</code> (<code>fields: { values: 'Margin %', explainBy: [...] }</code>, alias <code>influencers</code>) lists the influencers on the left and the chosen one's column against the average on the right. Clicking a bar cross-filters the page. <code>format.keyInfluencers</code> takes <code>max</code>, <code>minShare</code> and <code>basis</code>. Register it with <code>registerAI()</code>.
+</li></ul>
 <h2 id="narrative">Narrative <a class="anchor" href="#narrative" aria-label="Link to this section">#</a></h2>
 <p>The <code>narrative</code> visual writes a short summary of its measures that updates with filters and selections, like Power BI's smart narrative:</p>
 <p><img src="images/narrative.png" alt="The narrative visual summarising sales in plain language" loading="lazy"></p>

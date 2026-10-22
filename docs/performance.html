@@ -10,15 +10,23 @@
 <p>Try it with <code>npm run dev</code>, then open <code>/perf.html</code>. That page generates 100k to 1M rows, prints cold query timings, and runs a simulated live feed into the model.</p>
 <h2 id="what-the-engine-does-for-you">What the engine does for you <a class="anchor" href="#what-the-engine-does-for-you" aria-label="Link to this section">#</a></h2>
 <ul><li>
+<strong>Shared values.</strong> A parser makes a new string or <code>Date</code> object per row. Tables keep one object per distinct text or date value instead (up to 100,000 per column, which covers anything but near-unique columns), including for appended rows. In Node, a million dates take about 8 MB instead of 120 MB, and a million repeated strings about 8 MB instead of 40 MB.
+</li><li>
 <strong>Columnar storage with typed views.</strong> Each column is a plain array. On demand, the engine also builds a <code>Float64Array</code> view (numbers, dates as milliseconds) and a dictionary encoding (<code>Int32Array</code> codes + distinct values). Both are cached until the table changes.
 </li><li>
 <strong>Vectorised aggregations.</strong> <code>SUM</code>, <code>AVERAGE</code>, <code>MIN</code>, <code>MAX</code>, <code>COUNT</code>, <code>COUNTA</code> and <code>DISTINCTCOUNT</code> over a column run as tight loops over those views.
 </li><li>
 <strong>Single-pass grouped queries.</strong> A visual whose measures are built from those aggregations, <code>COUNTROWS</code> and compiled <code>SUMX</code> / <code>AVERAGEX</code> (below) is answered in one pass over the fact rows. Measures may combine them with <code>+ - * /</code> and <code>DIVIDE</code>, reference other such measures, and wrap them in <code>CALCULATE</code> with column filters (<code>Product[Category] = &quot;Bikes&quot;</code>, <code>IN</code> lists, comparisons, <code>KEEPFILTERS</code>, nested filters). Each filter is evaluated once into a lookup over the column's dictionary codes, so it costs about two array reads per row; a <code>CALCULATE</code> measure grouped by product × country at 1M rows dropped from about 3.1 s to 0.26 s. This replaces evaluating every group separately. Group columns may be on the fact table or on dimensions reached through many-to-one relationships.
 <ul><li>
-<strong>Fallback:</strong> anything else (time intelligence, <code>CALCULATE</code> with <code>ALL</code> or table filters, <code>CALCULATE</code> filtering a column the query also groups or filters by, other iterators, calculation groups in play, <code>USERELATIONSHIP</code>, <code>includeEmpty</code>) uses the general engine, so results never change.
+<strong>Guards:</strong> <code>IF(&lt;comparison of such measures&gt;, a, [b])</code> compiles too, so &quot;only when there are sales&quot; measures stay on the fast path.
 </li><li>
-<strong>When it applies:</strong> in <code>'auto'</code> mode it is used for multi-column groupings and for single columns with more than 1,000 values. Below that, indexed per-group evaluation is already faster.
+<strong>Iterators over a column's values</strong> (<code>AVERAGEX(VALUES(Date[Date]), [Sales])</code>, <code>MAXX(VALUES(Product[Name]), …)</code>, and the other X functions) whose body compiles as above run as one grouped pass under the current filters instead of one context transition per value. On a real report, an average-per-day measure over 1,287 products went from 65 s to 0.5 s.
+</li><li>
+<strong>Time intelligence</strong> joins the single pass when the visual groups by columns of the date table: <code>CALCULATE(x, SAMEPERIODLASTYEAR(…))</code>, <code>DATEADD</code>, <code>DATESYTD</code> / <code>QTD</code> / <code>MTD</code> (with a fiscal year end), <code>PARALLELPERIOD</code>, <code>PREVIOUSMONTH</code> / <code>QUARTER</code> / <code>YEAR</code> and <code>TOTALYTD</code> / <code>QTD</code> / <code>MTD</code>, where <code>x</code> is built from the aggregations above (not <code>DISTINCTCOUNT</code>). One pass sums the fact rows per date; each group then adds up the dates its rule selects (period-to-date windows and parallel periods are ranges of the sorted dates), with the evaluator's own calendar rules, including the month-end rule of <code>DATEADD</code>. Plain measures in the same visual come from the same per-date sums. Groups come from the date table, as in the general engine, so a month without sales still shows last year's. Highlights, groupings outside the date table and bidirectional relationships use the general engine.
+</li><li>
+<strong>Fallback:</strong> anything else (other time-intelligence shapes, <code>CALCULATE</code> with <code>ALL</code> or table filters, <code>CALCULATE</code> filtering a column the query also groups or filters by, other iterators, calculation groups in play, <code>USERELATIONSHIP</code>, <code>includeEmpty</code>) uses the general engine, so results never change.
+</li><li>
+<strong>When it applies:</strong> in <code>'auto'</code> mode it is used for multi-column groupings, for single columns with more than 1,000 values, and whenever a value uses time intelligence. Below that, indexed per-group evaluation is already faster.
 </li><li>
 <strong>Toggle:</strong> use <code>setFastQuery('always' | 'off' | 'auto')</code> to compare the two paths.
 </li></ul>
@@ -38,10 +46,24 @@
 <strong>Numeric group keys.</strong> Multi-column groupings key their groups by a mixed-radix number over the column dictionaries, with a dense lookup table for up to 4M combinations, instead of building a string per row.
 </li></ul>
 <h2 id="numbers">Numbers <a class="anchor" href="#numbers" aria-label="Link to this section">#</a></h2>
-<p><code>npm run bench</code> generates a star schema and times each query cold, with caches cleared before each run. The schema is a fact table, 400 products, 40 regions and a two-year calendar. The query filters to one year, about half the rows. Timings are from Node 22 on a laptop:</p>
-<div class="table"><table><thead><tr><th>Query</th><th>200k rows</th><th>1M rows</th></tr></thead><tbody><tr><td>Category × sales and average order value (12 groups)</td><td>42 ms</td><td>192 ms</td></tr><tr><td>Product × region, 16k groups</td><td>57 ms (per-group engine: 10.1 s)</td><td>156 ms</td></tr><tr><td>Day × sales, 365 groups</td><td>8 ms</td><td>11 ms</td></tr><tr><td>Day × YTD (time intelligence)</td><td>121 ms (scan path: 0.65 s)</td><td>193 ms (scan path: 2.8 s)</td></tr></tbody></table></div>
+<p><code>npm run bench</code> generates a star schema and times each query cold, with caches cleared before each run. The schema is a fact table, 400 products, 40 regions and a two-year calendar. The query filters to one year, about half the rows. Timings are from Node 18 on a laptop:</p>
+<div class="table"><table><thead><tr><th>Query</th><th>200k rows</th><th>1M rows</th></tr></thead><tbody><tr><td>Category × sales and average order value (12 groups)</td><td>47 ms</td><td>191 ms</td></tr><tr><td>Product × region, 16k groups</td><td>58 ms (per-group engine: 11.3 s)</td><td>99 ms</td></tr><tr><td>Day × sales, 365 groups</td><td>8 ms</td><td>12 ms</td></tr><tr><td>Product × region, <code>CALCULATE</code> filter</td><td>27 ms (per-group engine: 11.6 s)</td><td>79 ms</td></tr><tr><td>Day × YTD (time intelligence)</td><td>15 ms (per-group engine: 0.65 s)</td><td>21 ms (was 193 ms)</td></tr><tr><td>Year × month × sales, last year and growth</td><td>17 ms (per-group engine: 47 ms)</td><td>46 ms</td></tr></tbody></table></div>
+<p>Each query has a time budget in <code>bench/scale.test.ts</code> (about three times these figures), so <code>npm run bench</code> fails on a real regression.</p>
 <p>Generating and loading 1M rows takes about 0.75 s. Warm queries (same filters again) come from the caches in well under a millisecond.</p>
 <p>Pre-aggregated results can differ from a row-by-row scan in the last floating-point digits, because the same values are added in a different order. Displayed values are unaffected.</p>
+<p>Compare the two paths yourself; they return the same rows:</p>
+<div class="code"><a class="run" href="../playground.html#performance%2F0">▶ Run in playground</a><pre><code class="lang-js">import { setFastQuery } from '@prismbi/prismbi';
+
+const spec = { groupBy: ['Date[Year]', 'Date[MonthNumber]'], values: ['Total Sales', 'Sales LY', 'Sales YTD'], totals: true };
+const run = (mode) =&gt; {
+  setFastQuery(mode);
+  const t = performance.now();
+  const r = model.query(spec);
+  return { ms: Math.round(performance.now() - t), rows: r.rows.length, first: r.rows[0] };
+};
+const result = { singlePass: run('always'), perGroup: run('off') };
+setFastQuery('auto');
+return result;</code></pre></div>
 <h2 id="rendering-at-scale">Rendering at scale <a class="anchor" href="#rendering-at-scale" aria-label="Link to this section">#</a></h2>
 <p><img src="images/performance.png" alt="The scale demo: 250,000 rows, a dense line chart, 8,000 scatter points and a virtualized table" loading="lazy"></p>
 <ul><li>
@@ -52,9 +74,13 @@
 <strong>Off-screen visuals</strong> wait. When filters, selections or data change, visuals more than 300 px outside the viewport skip their re-render until they are scrolled into view (an <code>IntersectionObserver</code>). <code>report.flush()</code> and exports still render everything.
 </li><li>
 <strong>Tables</strong> with more than 500 rows render only the rows in view, plus a margin, between spacer rows. Sorting, selection and banding behave as before. <code>format.table.virtualize</code> forces windowing on or off, and wrapping text turns it off because rows then vary in height.
+</li><li>
+<strong>Matrices</strong> window their visible rows the same way once more than 500 are expanded; parent rows carrying subtotals count as rows. Expanding or collapsing keeps the scroll position. <code>format.matrix.virtualize</code> forces it on or off.
+</li><li>
+<strong>Heatmaps and calendars</strong> with more than 3,000 cells paint on a canvas and find the cell under the pointer from its row and column, with the same tooltips, selection, context menu and drill. <code>format.heatmap.renderer</code> / <code>format.calendar.renderer</code>: <code>'auto' | 'svg' | 'canvas'</code>. They fall back to SVG without canvas support.
 </li></ul>
 <h2 id="off-the-main-thread">Off the main thread <a class="anchor" href="#off-the-main-thread" aria-label="Link to this section">#</a></h2>
-<p><code>@prismbi/prismbi/worker</code> (about 1.3 KB) runs the model in a Web Worker. Build or load the model inside the worker, then talk to it from the page:</p>
+<p><code>@prismbi/prismbi/worker</code> (about 2 KB) runs the model in a Web Worker. Build or load the model inside the worker, then talk to it from the page:</p>
 <div class="code"><pre><code class="lang-ts">// model.worker.ts
 import { serveModel } from '@prismbi/prismbi/worker';
 import { loadCsv } from '@prismbi/prismbi/connectors';
@@ -69,9 +95,16 @@ const engine = createWorkerEngine(new Worker(new URL('./model.worker.ts', import
 const ctrl = new AbortController();
 const result = await engine.query({ groupBy: ['Sales[Region]'], values: ['Total'] }, ctrl.signal);</code></pre></div>
 <p>The engine API is asynchronous, and every method returns a promise:</p>
-<div class="table"><table><thead><tr><th>Method</th><th>Does</th></tr></thead><tbody><tr><td><code>query(spec, signal?)</code></td><td>Runs a <code>QuerySpec</code> and returns rows and totals.</td></tr><tr><td><code>evaluate(expression, filters?, signal?)</code></td><td>Evaluates a scalar expression.</td></tr><tr><td><code>evaluateTable(expression, filters?, signal?)</code></td><td>Evaluates a table expression (DAX <code>EVALUATE</code>).</td></tr><tr><td><code>addTable(name, rows, schema?)</code>, <code>refreshTable(...)</code>, <code>appendRows(name, rows, options?)</code></td><td>Changes table data.</td></tr><tr><td><code>addMeasure(def)</code></td><td>Adds a measure.</td></tr><tr><td><code>setRoles(roles, options?)</code></td><td>Switches row-level security roles.</td></tr><tr><td><code>metadata()</code></td><td>Returns tables, columns, measures and relationships, without rows.</td></tr><tr><td><code>dispose()</code></td><td>Stops the engine and terminates the worker.</td></tr></tbody></table></div>
+<div class="table"><table><thead><tr><th>Method</th><th>Does</th></tr></thead><tbody><tr><td><code>query(spec, signal?)</code></td><td>Runs a <code>QuerySpec</code> and returns rows and totals.</td></tr><tr><td><code>evaluate(expression, filters?, signal?)</code></td><td>Evaluates a scalar expression.</td></tr><tr><td><code>evaluateTable(expression, filters?, signal?)</code></td><td>Evaluates a table expression (DAX <code>EVALUATE</code>).</td></tr><tr><td><code>addTable(name, rows, schema?)</code>, <code>refreshTable(...)</code>, <code>appendRows(name, rows, options?)</code></td><td>Changes table data.</td></tr><tr><td><code>addColumns(name, columns, schema?, { transfer? })</code></td><td>Adds a table from column arrays, moving numbers, dates and text codes to the worker as transferred buffers (see below).</td></tr><tr><td><code>addMeasure(def)</code></td><td>Adds a measure.</td></tr><tr><td><code>setRoles(roles, options?)</code></td><td>Switches row-level security roles.</td></tr><tr><td><code>metadata()</code></td><td>Returns tables, columns, measures and relationships, without rows.</td></tr><tr><td><code>dispose()</code></td><td>Stops the engine and terminates the worker.</td></tr></tbody></table></div>
 <p>Filters must be filter specs (<code>{ target, op, value }</code>), because compiled filters can't be copied to another thread. Requests run in order. Aborting a request rejects it at once with an <code>AbortError</code>, and the worker skips it if it hasn't started.</p>
 <p><code>createLocalEngine(model)</code> has the same API on the current thread, for tests, server rendering or small models.</p>
+<p><strong>Large tables: send columns, not rows.</strong> <code>addTable</code> copies every row object to the worker (structured clone). <code>addColumns</code> packs number and date columns as <code>Float64Array</code>s and text as <code>Int32Array</code> codes plus a dictionary, and <em>transfers</em> the buffers, so nothing is copied; the worker adopts them as the table's numeric and dictionary views, which also makes the first query faster. In Node, loading 1M rows of four columns over a <code>MessageChannel</code> took about 1.2 s instead of 11.5 s, and the first grouped query about 250 ms instead of 600 ms.</p>
+<div class="code"><pre><code class="lang-ts">await engine.addColumns('Sales', {
+  Amount: amounts,            // Float64Array or number[]
+  Region: regions,            // string[] → codes + dictionary
+  OrderDate: dates,           // Date[] → epoch ms
+});</code></pre></div>
+<p>Typed arrays you pass are moved, and are empty afterwards; pass <code>{ transfer: false }</code> to send a copy instead. Arrays backed by a <code>SharedArrayBuffer</code> (available when the page is <code>crossOriginIsolated</code>) are shared rather than moved. <code>packColumn</code> and <code>addPackedTable</code> are exported for building the same tables yourself.</p>
 <h3 id="reports-on-the-worker">Reports on the worker <a class="anchor" href="#reports-on-the-worker" aria-label="Link to this section">#</a></h3>
 <p>Pass the engine to a report and every visual query runs in the worker:</p>
 <div class="code"><pre><code class="lang-ts">const report = new Report(el, { model, engine, pages });</code></pre></div>

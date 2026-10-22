@@ -55,6 +55,30 @@ model.recalculateTables(); // after changing data (refreshTable does this for yo
 // creates table 'Price Change' and measure [Price Change Value]
 model.addMeasure('Projected Sales', '[Total Sales] * (1 + [Price Change Value])');</code></pre></div>
 <div class="code"><pre><code class="lang-ts">{ type: 'slicer', fields: { field: &quot;'Price Change'[Price Change]&quot; }, format: { slicer: { style: 'slider' } } }</code></pre></div>
+<h2 id="aggregation-tables">Aggregation tables <a class="anchor" href="#aggregation-tables" aria-label="Link to this section">#</a></h2>
+<p>An aggregation table summarizes a large fact table at a coarser grain (per day and product, say), and answers every query it can, as Power BI's &quot;manage aggregations&quot; does. The detail table answers the rest; it can even be empty locally while an <a href="sql.html">SQL engine</a> holds its rows.</p>
+<div class="code"><pre><code class="lang-ts">model
+  .addTable('SalesAgg', dailyRows) // OrderDate, ProductKey, Amount, Qty, Rows
+  .addRelationship({ from: 'SalesAgg[OrderDate]', to: 'Date[Date]' })
+  .addRelationship({ from: 'SalesAgg[ProductKey]', to: 'Product[ProductKey]' })
+  .addAggregation({
+    table: 'SalesAgg',
+    detail: 'Sales',
+    groupBy: { OrderDate: 'OrderDate', ProductKey: 'ProductKey' },   // detail column → aggregation column
+    columns: { SalesAmount: { sum: 'Amount' }, Quantity: { sum: 'Qty', max: 'MaxQty', count: 'QtyCount' } },
+    rows: 'Rows',                                                    // detail rows per group, for COUNTROWS
+  });
+
+model.query({ groupBy: ['Product[Category]', 'Date[Year]'], values: ['Total Sales', 'Margin %'] }).aggregation; // 'SalesAgg'</code></pre></div>
+<ul><li>
+<strong>Covered queries:</strong> every grouping, filter and <code>CALCULATE</code> column is on a table the aggregation is related to (directly or further along many-to-one relationships), on the aggregation itself, or a detail column in <code>groupBy</code>. Measures (followed through other measures) may use <code>SUM</code>, <code>MIN</code>, <code>MAX</code>, <code>COUNT</code> / <code>COUNTA</code> and <code>AVERAGE</code> of mapped columns (<code>AVERAGE</code> needs <code>sum</code> and <code>count</code>), <code>COUNTROWS</code> of the detail table (with <code>rows</code>), <code>MIN</code>, <code>MAX</code> and <code>DISTINCTCOUNT</code> of grouped-by columns, and anything that doesn't touch the detail table: <code>CALCULATE</code> filters, time intelligence, <code>DIVIDE</code> and the rest.
+</li><li>
+<strong>Not covered</strong>, answered from the detail table: other columns of the detail table, iterators or <code>FILTER</code> over it, distinct counts of columns it doesn't group by, Top N filters, compiled row filters, and any query while row-level security is active.
+</li><li>
+<strong>Which one:</strong> <code>result.aggregation</code> names the table that answered; <code>model.aggregationFor(spec)</code> tells without running. With several, the higher <code>precedence</code> wins, then the smaller table. Results keep the field names and formats asked for.
+</li><li>
+<strong>Power BI:</strong> aggregation mappings (<code>alternateOf</code> in TMDL or <code>model.bim</code>) come across in <a href="powerbi.html">the import</a>.
+</li></ul>
 <h2 id="hierarchies-display-folders-perspectives">Hierarchies, display folders, perspectives <a class="anchor" href="#hierarchies-display-folders-perspectives" aria-label="Link to this section">#</a></h2>
 <div class="code"><pre><code class="lang-ts">model.addHierarchy('Date', 'Calendar', ['Year', 'Quarter', 'Month']);
 // any drillable well: { category: 'Date[Calendar]' }; a slicer on it becomes a tree

@@ -56,6 +56,25 @@ await loadSqlTables(model, duck, [
   { table: 'Products', sql: 'SELECT * FROM products' },
 ]);</code></pre></div>
 <p>Tables load in parallel. Tables that already exist are refreshed, keeping their calculated columns and relationships.</p>
+<h2 id="warm-start-cache-loaded-tables">Warm start: cache loaded tables <a class="anchor" href="#warm-start-cache-loaded-tables" aria-label="Link to this section">#</a></h2>
+<p>Large CSV or API loads can be kept in the browser, so the next visit restores the tables from IndexedDB instead of fetching and parsing them again:</p>
+<div class="code"><pre><code class="lang-ts">import { cachedTables, loadCsv } from '@prismbi/prismbi/connectors';
+
+const from = await cachedTables(model, 'sales', async () =&gt; {
+  model.addTable('Sales', await loadCsv('/data/sales.csv'));
+}, { version: DATA_VERSION, maxAgeMs: 24 * 3600_000 });
+// 'cache' or 'loaded'; then model the tables as usual
+model.addRelationship({ from: 'Sales[ProductKey]', to: 'Product[ProductKey]' }).addMeasure('Total Sales', 'SUM(Sales[Amount])');</code></pre></div>
+<ul><li>
+<strong>What is stored:</strong> the tables <code>load</code> added (or <code>tables</code>), as packed typed columns: numbers and dates as <code>Float64Array</code>s, text as dictionary codes, plus each column's type, format, sort-by and folder. Calculated columns, relationships and measures are not stored; define them after the call, as on a first visit. Restored tables start with their numeric and dictionary views already built.
+</li><li>
+<strong>Invalidation:</strong> <code>version</code> (a deploy id, an ETag) and <code>maxAgeMs</code> make an old copy a miss; <code>clearCachedTables(key)</code> drops it.
+</li><li>
+<strong>Lower level:</strong> <code>saveTables(model, key, options)</code> and <code>loadTables(model, key, options)</code> (<code>null</code> on a miss).
+</li><li>
+<strong>Storage:</strong> IndexedDB by default (<code>idbStore(dbName?, storeName?)</code>). Pass <code>store</code> with <code>get</code> / <code>set</code> / <code>delete</code> to use something else. Storage errors (private mode, quota) count as a miss and never fail the load.
+</li></ul>
+<p>In Chrome, 50,000 rows of four columns restore in about 65 ms.</p>
 <h2 id="live-data">Live data <a class="anchor" href="#live-data" aria-label="Link to this section">#</a></h2>
 <h3 id="appending-rows">Appending rows <a class="anchor" href="#appending-rows" aria-label="Link to this section">#</a></h3>
 <div class="code"><pre><code class="lang-ts">model.appendRows('Ticks', rows, { maxRows: 100_000 });</code></pre></div>
