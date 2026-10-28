@@ -56,6 +56,7 @@ studio.on('save', (doc) =&gt; api.publish(doc));        // Ctrl+S / studio.save(
 <strong>Starting point:</strong> the first time, the page's visuals are stacked in reading order, with small cards paired side by side. <strong>Reset phone layout</strong> regenerates that arrangement.
 </li></ul>
 <p>Phone layouts are saved on the page as <code>mobile</code> and used automatically below 640 px:</p>
+<p><img src="images/report-phone.png" alt="The rendered phone layout displaying responsive mobile dashboard visuals" loading="lazy"></p>
 <div class="code"><pre><code class="lang-ts">{ id: 'overview', name: 'Overview', visuals: [/* … */],
   mobile: { columns: 4, visuals: [{ id: 'k-sales', layout: { x: 0, y: 0, w: 2, h: 3 } }, /* … */] } }</code></pre></div>
 <div class="table"><table><thead><tr><th>API</th><th>Does</th></tr></thead><tbody><tr><td><code>report.setLayoutMode('auto' | 'desktop' | 'mobile')</code></td><td>choose the layout; <code>'auto'</code> switches at <code>mobileBreakpoint</code> (default 640)</td></tr><tr><td><code>report.autoMobileLayout(page?)</code></td><td>(re)generate a page's phone layout</td></tr><tr><td><code>report.setMobileVisibility(id, visible)</code></td><td>hide a visual on phones, or bring it back at the bottom</td></tr><tr><td><code>report.setMobileLayout(id, layout)</code></td><td>move or resize a visual in the phone layout</td></tr><tr><td><code>report.isMobileLayout</code></td><td>whether the phone layout is showing</td></tr></tbody></table></div>
