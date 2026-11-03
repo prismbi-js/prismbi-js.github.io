@@ -15,7 +15,7 @@ const { window } = new JSDOM();</code></pre></div>
 <div class="code"><pre><code class="lang-ts">const svg = renderVisualSvg(model, { type: 'line', fields: { category: 'Date[MonthYear]', values: 'Total Sales' } }, { window, width: 640, height: 360 });
 const html = renderReportHtml(model, reportDefinition, { window, page: 'Overview', width: 1280, theme: 'light' });</code></pre></div>
 <ul><li>
-<strong><code>renderVisualSvg</code>:</strong> charts come out as their own vector <code>&lt;svg&gt;</code>. HTML visuals (cards, tables, slicers) are wrapped in a <code>foreignObject</code> together with the report styles. A visual that fails to render throws an error with its message.
+<strong><code>renderVisualSvg</code>:</strong> charts come out as their own vector <code>&lt;svg&gt;</code>. HTML visuals (cards, tables, slicers) are wrapped in a <code>foreignObject</code> together with the report styles. A visual that fails to render throws an error with its message. You can translate rendered SVGs into crisp vector PDFs with zero dependencies using <code>buildPdf([{ vectorCommands: svgToPdf(svg, 640, 360), width: 640, height: 360 }])</code>.
 </li><li>
 <strong><code>renderReportHtml</code>:</strong> returns a self-contained HTML document with styles inlined and no scripts. Visuals are absolutely positioned from the page's grid layout at the width you pass. Use it for archives and HTML email bodies, or open it in any headless browser to produce PDF or PNG.
 </li><li>
