@@ -91,17 +91,42 @@ Calculated columns that only read their own row (<code>Sales[Qty] * Sales[Price]
 Calculated columns that aggregate (<code>SUM</code>, <code>CALCULATE</code>, <code>RANKX</code>, measures, <code>RELATED</code>, …), in this table or in any other, are recomputed in full. So are calculated tables.
 </li></ul>
 <h3 id="streaming">Streaming <a class="anchor" href="#streaming" aria-label="Link to this section">#</a></h3>
-<div class="code"><pre><code class="lang-ts">const socket = new WebSocket('wss://example.com/ticks');
-const live = streamInto(model, 'Ticks', socket, { maxRows: 50_000, intervalMs: 250 });
-// later
-live.close();</code></pre></div>
-<p><code>streamInto(model, table, source, options)</code> listens to any message source: a <code>WebSocket</code>, an <code>EventSource</code>, a <code>BroadcastChannel</code> or a worker port.</p>
+<div class="code"><pre><code class="lang-ts">import { streamInto } from '@prismbi/prismbi/connectors';
+
+// Connect directly via WebSocket or EventSource URL:
+const live = streamInto(report, 'Ticks', 'wss://example.com/ticks', {
+  maxRows: 50_000,
+  intervalMs: 250,
+  reconnect: { delayMs: 1000, backoffMultiplier: 1.5, maxRetries: 10 },
+  transform: (row) =&gt; (row.price &lt;= 0 ? null : { ...row, price: Math.round(row.price * 100) / 100 }),
+  onStateChange: (state) =&gt; console.log('Stream status:', state),
+  onBatch: (rows) =&gt; console.log(`Ingested ${rows.length} rows`),
+});
+
+// Or connect to an existing message source instance (WebSocket, EventSource, BroadcastChannel, Worker):
+const liveChannel = streamInto(model, 'Ticks', new BroadcastChannel('telemetry'));
+
+// Inspection and teardown:
+console.log(live.state); // 'connecting' | 'open' | 'closed' | 'reconnecting' | 'error'
+live.flush();            // Apply buffered rows immediately
+live.close();            // Close stream and tear down connection</code></pre></div>
+<p><code>streamInto(target, table, source, options)</code> streams live rows into a <code>DataModel</code> or directly into a <code>Report</code>:</p>
 <ul><li>
-<strong>Parsing:</strong> each message is JSON-parsed when it is a string. It can be one row, an array of rows, <code>{ rows: [...] }</code> or column arrays. Pass <code>parse(data)</code> for other formats.
+<strong>Target:</strong> Pass a <code>DataModel</code> or a <code>Report</code>. When passing a <code>Report</code>, incoming rows route through <code>Report.pushData()</code>, updating the underlying table with sliding window truncation and triggering scoped visual re-renders.
 </li><li>
-<strong>Batching:</strong> rows are batched and appended every <code>intervalMs</code> (default 250), so a fast feed re-renders visuals at a steady rate instead of once per message.
+<strong>Source:</strong> Pass a URL string (<code>wss://</code>, <code>ws://</code> for WebSocket, or <code>http://</code>, <code>https://</code> for EventSource SSE) or any message-like source (<code>WebSocket</code>, <code>EventSource</code>, <code>BroadcastChannel</code>, Worker <code>MessagePort</code>).
 </li><li>
-<strong>Handle:</strong> <code>onBatch</code> and <code>onError</code> report progress. The handle has <code>flush()</code>, <code>close()</code> (which also closes the source) and <code>received</code>.
+<strong>Auto-Reconnection:</strong> When passing a URL (or with <code>reconnect: true</code>), connections automatically retry on network failure or socket close using configurable exponential backoff (<code>delayMs</code>, <code>maxDelayMs</code>, <code>backoffMultiplier</code>, <code>maxRetries</code>).
+</li><li>
+<strong>Connection Lifecycle:</strong> The handle tracks <code>handle.state</code> (<code>'connecting' | 'open' | 'closed' | 'reconnecting' | 'error'</code>) and notifies <code>onStateChange(state, detail)</code>.
+</li><li>
+<strong>Parsing:</strong> String payloads are JSON-parsed automatically. Accepts a single row, an array of rows, <code>{ rows: [...] }</code>, or column arrays (<code>{ x: [...], y: [...] }</code>). Provide custom <code>parse(data)</code> for binary or custom wire formats.
+</li><li>
+<strong>Transform &amp; Filter:</strong> The optional <code>transform(row)</code> pipeline modifies incoming rows on the fly or returns <code>null</code>/<code>undefined</code> to discard unwanted rows before buffering.
+</li><li>
+<strong>Batching &amp; Sliding Window:</strong> Rows buffer in memory and flush every <code>intervalMs</code> (default 250 ms) to keep visual redraws smooth and bounded. <code>maxRows</code> automatically trims the oldest entries.
+</li><li>
+<strong>Handle:</strong> Exposes <code>flush()</code>, <code>close()</code>, <code>received</code>, and <code>state</code>.
 </li></ul>
 <h3 id="scheduled-refresh">Scheduled refresh <a class="anchor" href="#scheduled-refresh" aria-label="Link to this section">#</a></h3>
 <div class="code"><pre><code class="lang-ts">const refresh = scheduleRefresh(model, 'Orders', (signal) =&gt; loadRest('/api/orders', { signal }), { intervalMs: 60_000 });
