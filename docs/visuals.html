@@ -220,6 +220,17 @@ format: { slicer: { syncGroup: 'year' } }</code></pre></div>
     size: 'Topology[Importance]',
   },
   format: {
+    colors: {
+      categories: {
+        'Gateway-1': '#ff0055', // Override specific node color
+        'Core': '#34495e',       // Override cluster group color
+      },
+      rules: [
+        { op: '&gt;=', value: 4, color: '#e74c3c' }, // Highlight bottleneck/hub nodes
+        { op: '&lt;', value: 2, color: '#2ecc71' },  // Peripheral nodes
+      ],
+      gradient: { min: '#3498db', max: '#e74c3c' }, // Or smooth gradient across node metric
+    },
     network: {
       nodeSize: 9,        // base radius
       linkWidth: 1.5,     // link line width
@@ -227,6 +238,9 @@ format: { slicer: { syncGroup: 'year' } }</code></pre></div>
       gravity: 0.05,      // centering pull
       arrows: true,       // directional arrowheads
       labels: true,       // node text labels
+      metric: 'degree',   // metric for rules/gradient: 'degree' | 'size' | 'inWeight' | 'outWeight'
+      edgeColor: '#bdc3c7',        // custom edge stroke color
+      edgeWidthRange: [1.5, 8],    // weight-scaled edge stroke width [min, max]
     },
   },
 }</code></pre></div>
@@ -235,7 +249,11 @@ format: { slicer: { syncGroup: 'year' } }</code></pre></div>
 </li><li>
 <strong>Node Dragging:</strong> Click and drag any node to pin or adjust layout in real-time with automatic edge tracking.
 </li><li>
-<strong>Cluster Highlighting:</strong> Hovering over a node highlights adjacent connections and dims non-neighboring nodes.
+<strong>Conditional Formatting &amp; Highlighting:</strong> Supports rule-based threshold coloring (<code>colors.rules</code>), smooth metric gradients (<code>colors.gradient</code>), and category-specific overrides (<code>colors.categories</code>) for both individual node IDs and cluster groups.
+</li><li>
+<strong>Custom Edge Scaling:</strong> Configurable edge stroke color (<code>network.edgeColor</code>) and dynamic weight scaling bounds (<code>network.edgeWidthRange</code>).
+</li><li>
+<strong>Cluster Highlighting:</strong> Hovering over a node highlights adjacent connections in the node's color and dims non-neighboring nodes.
 </li><li>
 <strong>Cross-Filtering:</strong> Clicking any node cross-filters all downstream visuals in the report.
 </li></ul>
