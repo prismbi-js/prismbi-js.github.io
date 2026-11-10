@@ -13,11 +13,16 @@
       .demo-bar button, .demo-bar select { font: inherit; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(127,127,127,.4); background: transparent; color: inherit; cursor: pointer; }
       .demo-bar option { color: #0b0b0b; }
       .demo-bar a { color: inherit; }
-      #stats { font: 12px ui-monospace, Consolas, monospace; opacity: .75; padding: 6px 14px; border-bottom: 1px solid rgba(127,127,127,.25); white-space: pre-wrap; }
+      #stats { font: 12px ui-monospace, Consolas, monospace; opacity: .75; padding: 6px 14px; border-bottom: 1px solid rgba(127,127,127,.25); white-space: pre-wrap; word-break: break-all; }
       #app { flex: 1; min-height: 0; }
+      @media (max-width: 600px) {
+        .demo-bar { padding: 6px 10px; gap: 6px; }
+        .demo-bar b { width: 100%; margin-bottom: 2px; }
+        #stats { padding: 6px 10px; font-size: 11px; }
+      }
     </style>
-    <script type="module" crossorigin src="/assets/perf-upzbsWRp.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/index-CUh5najx.js">
+    <script type="module" crossorigin src="/assets/perf-DNvZzvJD.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/index-Ckgz9u5z.js">
   </head>
   <body>
     <div class="demo-bar">

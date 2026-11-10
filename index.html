@@ -23,6 +23,11 @@
       .view-as option { color: #0b0b0b; }
       .dax-console[hidden] { display: none; }
       body.console-open #app { margin-right: min(576px, 100vw); }
+      @media (max-width: 640px) {
+        body.console-open #app { margin-right: 0; }
+        .demo-bar { padding: 6px 10px; gap: 6px; }
+        .demo-bar b { width: 100%; margin-bottom: 2px; }
+      }
       .dax-result td.num { text-align: right; }
       .dax-console { position: fixed; right: 8px; top: 48px; bottom: 8px; width: min(560px, calc(100vw - 16px)); z-index: 2000; display: flex; flex-direction: column; gap: 8px; padding: 12px; background: #fcfcfb; color: #0b0b0b; border: 1px solid rgba(0,0,0,.12); border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.25); }
       body.dark .dax-console { background: #1a1a19; color: #f0efec; border-color: rgba(255,255,255,.12); }
@@ -39,10 +44,10 @@
       .dax-result { overflow: auto; flex: 1; font-size: 12px; } .dax-result table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
       .dax-result th, .dax-result td { text-align: left; padding: 4px 8px; border-bottom: 1px solid rgba(127,127,127,.25); } .dax-result .error { color: #d03b3b; white-space: pre-wrap; }
     </style>
-    <script type="module" crossorigin src="/assets/main-XoDVx83H.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/index-CUh5najx.js">
-    <link rel="modulepreload" crossorigin href="/assets/ai-D3LOUvvL.js">
-    <link rel="modulepreload" crossorigin href="/assets/model-DcZ6TeWh.js">
+    <script type="module" crossorigin src="/assets/main-C3sFhFt-.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/index-Ckgz9u5z.js">
+    <link rel="modulepreload" crossorigin href="/assets/ai-LlRrTWpC.js">
+    <link rel="modulepreload" crossorigin href="/assets/model-gTwdvZRL.js">
   </head>
   <body>
     <div class="demo-bar">
