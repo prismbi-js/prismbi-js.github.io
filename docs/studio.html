@@ -63,11 +63,15 @@ studio.on('save', (doc) =&gt; api.publish(doc));        // Ctrl+S / studio.save(
 <p>Visuals not listed in <code>mobile.visuals</code> are hidden on phones. Pages without a phone layout keep the automatic behaviour: below 640 px every visual takes the full width, in order.</p>
 <h2 id="selecting-and-arranging-several-visuals">Selecting and arranging several visuals <a class="anchor" href="#selecting-and-arranging-several-visuals" aria-label="Link to this section">#</a></h2>
 <ul><li>
-<strong>Selecting several:</strong> Ctrl-, Shift- or Cmd-click visuals on the canvas or in <strong>Layers</strong>. Ctrl+A selects every visual on the page.
+<strong>Selecting several:</strong> Ctrl-, Shift- or Cmd-click visuals on the canvas or in <strong>Layers</strong>. Ctrl+A selects every visual on the page. Drag on the canvas background to draw a <strong>lasso marquee</strong> enclosing multiple visuals; hold Shift/Ctrl while dragging to union with the existing selection. Click empty canvas space to deselect.
 </li><li>
 <strong>Moving together:</strong> dragging any selected visual moves the whole selection, kept on the grid, and undoes as one step.
 </li><li>
-<strong>Arrange menu:</strong>
+<strong>Quick alignment toolbar &amp; Arrange menu:</strong>
+<ul><li>
+<strong>1-Click Alignment Toolbar:</strong> dedicated top bar button group (<code>.pbs-align-bar</code>) for instant alignment (Align left <code>⇤</code>, center <code>⇥⇤</code>, right <code>⇥</code>, top <code>⤊</code>, middle <code>⤋⤊</code>, bottom <code>⤋</code>) and distribution (horizontally <code>⬌</code>, vertically <code>⬍</code>), activated whenever multiple visuals are selected.
+</li><li>
+<strong>Arrange Menu:</strong>
 <ul><li>
 align left, center, right, top, middle or bottom (two or more selected)
 </li><li>
@@ -76,6 +80,7 @@ distribute horizontally or vertically (three or more)
 group (Ctrl+G) and ungroup (Ctrl+Shift+G); grouped visuals select and move together and are marked ⧉ in Layers
 </li><li>
 bring to front, bring forward, send backward, send to back
+</li></ul>
 </li></ul>
 </li><li>
 <strong>Layers:</strong> lists the page front to back. Click to select, use the arrows to reorder.

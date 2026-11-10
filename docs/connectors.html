@@ -50,10 +50,20 @@ loadRest(url, { path?, params?, pagination?, maxPages = 1000, maxRows?, map? }):
 });</code></pre></div>
 <p>GraphQL <code>errors</code> reject the promise with their messages joined.</p>
 <h2 id="apache-arrow-parquet-and-duckdb">Apache Arrow, Parquet and DuckDB <a class="anchor" href="#apache-arrow-parquet-and-duckdb" aria-label="Link to this section">#</a></h2>
-<p><code>addArrowTable(model, name, arrowTable, schema?)</code> adds a table from anything shaped like an Apache Arrow <code>Table</code> (<code>numRows</code>, <code>schema.fields</code>, <code>getChild(name).get(i)</code>). PrismBI doesn't depend on <code>apache-arrow</code>. BigInts become numbers, <code>Date</code> and <code>Timestamp</code> columns become <code>Date</code>s, and structs and lists become JSON text. Existing tables are refreshed in place, so calculated columns are kept.</p>
-<p>Parquet files load through anything that produces Arrow, for example DuckDB-Wasm:</p>
-<div class="code"><pre><code class="lang-ts">const conn = await db.connect();
-addArrowTable(model, 'Trips', await conn.query(`SELECT * FROM 'trips.parquet' WHERE year = 2025`));</code></pre></div>
+<p><code>addArrowTable(model, name, arrowTable, schema?)</code> adds a table from anything shaped like an Apache Arrow <code>Table</code> (<code>numRows</code>, <code>schema.fields</code>, <code>getChild(name).get(i)</code>). PrismBI doesn't depend on <code>apache-arrow</code>. BigInts become numbers, <code>Date</code> and <code>Timestamp</code> columns become <code>Date</code>s, and structs and lists become JSON text. Existing tables are refreshed in place using columnar data (<code>DataModel.refreshColumns</code>), so calculated columns are preserved with zero row-object allocation overhead.</p>
+<p>Parquet files load directly through DuckDB-Wasm with <code>loadDuckDbTable</code> or <code>loadDuckDbTables</code>:</p>
+<div class="code"><pre><code class="lang-ts">import { loadDuckDbTable, loadDuckDbTables } from '@prismbi/prismbi/connectors';
+
+const conn = await db.connect();
+
+// Direct Parquet ingestion (executes read_parquet)
+await loadDuckDbTable(model, conn, { table: 'Trips', parquet: 'trips.parquet' });
+
+// Or ingest query results across multiple tables in parallel
+await loadDuckDbTables(model, conn, [
+  { table: 'Sales', query: 'SELECT * FROM sales WHERE year = 2025' },
+  { table: 'Products', parquet: 's3://bucket/products.parquet' },
+]);</code></pre></div>
 <h2 id="sql">SQL <a class="anchor" href="#sql" aria-label="Link to this section">#</a></h2>
 <p>A <code>SqlAdapter</code> is one method, <code>query(sql, params?, signal?) =&gt; Promise&lt;Row[]&gt;</code>. Wrap a database driver behind your API, DuckDB-Wasm, or sql.js:</p>
 <div class="code"><pre><code class="lang-ts">const duck: SqlAdapter = { query: async (sql) =&gt; (await conn.query(sql)).toArray().map((r) =&gt; r.toJSON()) };
