@@ -34,8 +34,9 @@ formatDax('VAR a=1 VAR b=2 RETURN a+b');
 // VAR b = 2
 // RETURN
 //     a + b
-formatDax(longExpression, { indent: '  ', maxLine: 100 });</code></pre></div>
-<p>The formatter adds parentheses only where precedence needs them, keeps spacing consistent, and breaks calls that run past <code>maxLine</code> onto one argument per line.</p>
+formatDax(longExpression, { indent: '    ', maxLine: 80, alignSwitch: true, breakCalculateFilters: true });</code></pre></div>
+<p>The formatter adds parentheses only where precedence needs them, keeps spacing consistent, canonicalizes function and keyword casing (<code>CALCULATE</code>, <code>SUM</code>, <code>TRUE</code>, <code>FALSE</code>, etc.), aligns <code>SWITCH</code> condition-value pairs on dedicated lines, and formats <code>CALCULATE</code> filter predicates onto separate indented lines. It also cleanly formats full measure definitions (<code>Total Margin = DIVIDE(...)</code>) while preserving leading source comments (<code>//</code>, <code>--</code>, <code>/* */</code>).</p>
+<p>In the Studio formula bar, authors can click the <strong>✦ Format DAX</strong> button or press <strong>Shift+Alt+F</strong> to beautify measures in place.</p>
 <h2 id="dependency-explanation">Dependency explanation <a class="anchor" href="#dependency-explanation" aria-label="Link to this section">#</a></h2>
 <div class="code"><pre><code class="lang-ts">import { explainDax } from '@prismbi/prismbi';
 explainDax(model, '[Margin %]');
