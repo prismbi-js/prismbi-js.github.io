@@ -20,9 +20,37 @@ report.setSlicerSelection('region', null); // clear</code></pre></div>
 <h3 id="hierarchy-slicer">Hierarchy slicer <a class="anchor" href="#hierarchy-slicer" aria-label="Link to this section">#</a></h3>
 <div class="code"><pre><code class="lang-ts">{ type: 'slicer', fields: { field: ['Product[Category]', 'Product[Subcategory]', 'Product[Name]'] } }</code></pre></div>
 <h3 id="sync-slicers-across-pages">Sync slicers across pages <a class="anchor" href="#sync-slicers-across-pages" aria-label="Link to this section">#</a></h3>
-<p>Slicers with the same <code>syncGroup</code> share one selection on every page, whatever their style:</p>
+<p>Slicers can synchronize across pages by sharing a <code>syncGroup</code>, or by specifying target <code>syncPages</code>:</p>
+<div class="code"><pre><code class="lang-ts">// Sync slicer with other pages even without duplicate slicer visuals:
+{
+  type: 'slicer',
+  fields: { field: 'Date[Year]' },
+  format: { slicer: { style: 'tiles', syncPages: ['Details', 'Analysis'] } }
+}</code></pre></div>
+<p>Or programmatically via <code>Report</code>:</p>
+<div class="code"><pre><code class="lang-ts">report.syncSlicers('slicer-id', ['page-2', 'page-3']); // target specific pages or 'all'
+report.getSyncSlicers(); // returns all sync slicers and active selections</code></pre></div>
+<p>Slicers with the same <code>syncGroup</code> share one selection across every page where they appear:</p>
 <div class="code"><pre><code class="lang-ts">{ type: 'slicer', fields: { field: 'Date[Year]' }, format: { slicer: { style: 'tiles', syncGroup: 'year' } } }   // page 1
 { type: 'slicer', fields: { field: 'Date[Year]' }, format: { slicer: { style: 'dropdown', syncGroup: 'year' } } } // page 2</code></pre></div>
+<h2 id="canvas-wallpaper-page-background-watermark">Canvas wallpaper, page background &amp; watermark <a class="anchor" href="#canvas-wallpaper-page-background-watermark" aria-label="Link to this section">#</a></h2>
+<p>Pages support rich background styling and watermarks via <code>PageDefinition.background</code> or <code>report.setPageBackground()</code>:</p>
+<div class="code"><pre><code class="lang-ts">report.setPageBackground({
+  color: '#f8fafc',
+  image: 'https://example.com/assets/dashboard-bg.png',
+  fit: 'cover', // 'cover' | 'contain' | 'fit' | 'center'
+  opacity: 0.85,
+  watermark: 'CONFIDENTIAL', // or { text: 'DRAFT', color: '#dc2626', opacity: 0.1, angle: -35 }
+});
+
+// Inspect active background
+report.getPageBackground();</code></pre></div>
+<h2 id="page-management-deletion-bulk-reordering">Page management: deletion &amp; bulk reordering <a class="anchor" href="#page-management-deletion-bulk-reordering" aria-label="Link to this section">#</a></h2>
+<div class="code"><pre><code class="lang-ts">// Reorder page tabs in any order:
+report.reorderPages(['summary', 'details', 'kpis']);
+
+// Delete a page by id or name (preserves at least one page):
+report.removePage('obsolete-page'); // returns true if removed</code></pre></div>
 <h2 id="cross-filtering-and-cross-highlighting">Cross-filtering and cross-highlighting <a class="anchor" href="#cross-filtering-and-cross-highlighting" aria-label="Link to this section">#</a></h2>
 <p>Clicking a data point selects it. <strong>Ctrl</strong> or <strong>⌘</strong> + click adds to the selection, clicking the same point again clears it, and clicking empty space or pressing <strong>Esc</strong> clears everything. Every other visual on the page reacts:</p>
 <ul><li>
