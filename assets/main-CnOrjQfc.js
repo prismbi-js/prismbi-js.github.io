@@ -1,4 +1,4 @@
-import{D as $,f as O,R as B}from"./index-Bju67BUX.js";import"./ai-CR-3Jooh.js";import{m as H,b as q}from"./model-Cg0lkZ_f.js";function N(a,S){const m=new $(a),o=document.createElement("aside");o.className="dax-console",o.hidden=!0,o.innerHTML=`
+import{D as $,f as O,R as B}from"./index-DEa75NBI.js";import"./ai-CG97r_C1.js";import{m as H,b as q}from"./model-BAeY3nmt.js";function N(a,S){const m=new $(a),o=document.createElement("aside");o.className="dax-console",o.hidden=!0,o.innerHTML=`
     <header><b>DAX console</b><span>Ctrl+Enter runs · Tab accepts a suggestion</span><button type="button" data-close aria-label="Close">✕</button></header>
     <textarea spellcheck="false" aria-label="DAX expression">SUMMARIZECOLUMNS(
     Product[Category],
